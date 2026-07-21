@@ -1,0 +1,45 @@
+/* src/styles/logo-animation.css */
+
+/* Animación inicial de entrada */
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+#logo-container {
+  animation: fadeInScale 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+  display: inline-block;
+}
+
+/* 
+  Esta clase simulará la transformación de tipografía a ramo.
+  En una implementación real se utilizan SVG morphing o scroll-timeline CSS (donde soportado),
+  pero aquí lo emularemos con una transición fluida vinculada a clases React aplicadas durante el scroll.
+*/
+.logo-scrolled {
+  color: var(--primary);
+  font-family: 'Times New Roman', Times, serif; /* Tipografía cursiva simulada */
+  font-style: italic;
+  transform: scale(1.1);
+  letter-spacing: -1px;
+}
+
+.logo-bouquet-icon {
+  display: inline-block;
+  opacity: 0;
+  transform: scale(0) rotate(-45deg);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.logo-scrolled .logo-bouquet-icon {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+  margin-left: 8px;
+}

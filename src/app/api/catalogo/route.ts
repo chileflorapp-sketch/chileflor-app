@@ -1,0 +1,101 @@
+import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+
+export async function GET() {
+  try {
+    const { data, error } = await supabase
+      .from('productos')
+      .select('*')
+      .order('ventas', { ascending: false });
+
+    if (error) throw error;
+    
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Supabase GET Error:', error);
+    return NextResponse.json({ error: 'Failed to read from Supabase' }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const { id, estado, badge, nombre, precio_base, imagen, descripcion, categoria, subcategoria, cross_sell } = await request.json();
+
+    const updates: any = {};
+    if (estado !== undefined) updates.estado = estado;
+    if (badge !== undefined) updates.badge = badge;
+    if (nombre) updates.nombre = nombre;
+    if (precio_base !== undefined) updates.precio_base = Number(precio_base);
+    if (imagen) updates.imagen = imagen;
+    if (descripcion !== undefined) updates.descripcion = descripcion;
+    if (categoria) updates.categoria = categoria;
+    if (subcategoria) updates.subcategoria = subcategoria;
+    if (cross_sell !== undefined) updates.cross_sell = cross_sell;
+
+    const { data, error } = await supabase
+      .from('productos')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, product: data });
+  } catch (error) {
+    console.error('Supabase POST Error:', error);
+    return NextResponse.json({ error: 'Failed to update Supabase' }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const newProduct = await request.json();
+    
+    // Generar un ID único basado en timestamp
+    if (!newProduct.id) {
+      newProduct.id = `p-${Date.now()}`;
+    }
+    
+    // Valores por defecto
+    if (!newProduct.ventas) newProduct.ventas = 0;
+    if (!newProduct.tags_visuales) newProduct.tags_visuales = { fondo: "neutro", angulo: "frontal", luz: "estudio" };
+    if (!newProduct.estado) newProduct.estado = 'activo';
+
+    const { data, error } = await supabase
+      .from('productos')
+      .insert([newProduct])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, product: data });
+  } catch (error) {
+    console.error('Supabase PUT Error:', error);
+    return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from('productos')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Supabase DELETE Error:', error);
+    return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
+  }
+}

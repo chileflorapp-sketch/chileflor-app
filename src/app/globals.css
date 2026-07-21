@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+  
+  --color-primary: #FF2651;
+  --color-primary-light: #FF5C7A;
+  --color-primary-dark: #CC1E41;
+  
+  --color-background: #FFFFFF;
+  --color-surface: #F8F9FA;
+  
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #666666;
+  
+  --radius-pill: 9999px;
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 8px;
+  
+  --shadow-premium: 0 20px 40px -15px rgba(0,0,0,0.05);
+  --shadow-float: 0 30px 60px -20px rgba(0,0,0,0.1);
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+  }
+}
+
+@layer utilities {
+  .pollen-container {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: 
+      radial-gradient(circle at center, rgba(255,215,0,0.1) 1px, transparent 2px),
+      radial-gradient(circle at center, rgba(255,215,0,0.08) 1.5px, transparent 2.5px),
+      radial-gradient(circle at center, rgba(255,215,0,0.05) 2.5px, transparent 3.5px);
+    background-size: 120px 120px, 180px 180px, 240px 240px;
+    background-position: 0 0, 0 0, 0 0;
+    animation: pollen-drift 60s linear infinite;
+  }
+
+  @keyframes pollen-drift {
+    0% { background-position: 0 0, 0 0, 0 0; }
+    100% { background-position: 120px 120px, -180px 180px, 240px -240px; }
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+  /* Utilidad Reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+    will-change: opacity, transform;
+  }
+  .reveal.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Animaciones Premium */
+  @keyframes pulse-slow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; transform: scale(0.98); }
+  }
+  .animate-pulse-slow {
+    animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes shimmer {
+    100% { transform: translateX(100%); }
+  }
+  .animate-shimmer {
+    animation: shimmer 2.5s infinite;
+  }
+
+  @keyframes progress-bar {
+    0% { width: 0%; opacity: 0; }
+    50% { opacity: 1; }
+    100% { width: 100%; }
+  }
+  .animate-progress-bar {
+    animation: progress-bar 1.5s ease-in-out forwards;
+  }
+
+  /* Ocultar el cursor por defecto si la media es hover */
+  @media (pointer: fine) {
+    body {
+      cursor: none !important;
+    }
+    a, button, input, select, textarea, [role="button"] {
+      cursor: none !important;
+    }
+  }

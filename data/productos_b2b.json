@@ -1,0 +1,13 @@
+[
+  {
+    "nombre": "pinchos posillos ",
+    "categoria": "Posillos",
+    "precio_mayorista": 800,
+    "precio_sugerido_retail": 1000,
+    "unidad_venta": "Unidad",
+    "imagen": "https://kjfoclkriceymoiypbsv.supabase.co/storage/v1/object/public/productos/catalogo/b2b-0.40475590618772284.jpeg",
+    "stock": 100,
+    "badge": "Quedan pocos!!!!!",
+    "id": "b2b-1784654560703"
+  }
+]

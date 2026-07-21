@@ -1,0 +1,26 @@
+[
+  {
+    "id": "CLI-001",
+    "nombre": "María González",
+    "correo": "maria.g@email.com",
+    "nivel": "Flor VIP",
+    "puntos": 10756,
+    "compras": 12
+  },
+  {
+    "id": "CLI-002",
+    "nombre": "Juan Pérez",
+    "correo": "juan.p@email.com",
+    "nivel": "Brote",
+    "puntos": 2390,
+    "compras": 3
+  },
+  {
+    "id": "CLI-003",
+    "nombre": "Camila Rojas",
+    "correo": "camila.r@email.com",
+    "nivel": "Semilla",
+    "puntos": 500,
+    "compras": 1
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "name": "Chileflor PWA",
+  "short_name": "Chileflor",
+  "description": "Venta de flores, arreglos y mantención",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FF2651",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

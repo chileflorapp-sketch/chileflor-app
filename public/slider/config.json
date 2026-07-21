@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "tag": "Bienvenidos",
+    "title": "Tu tienda Chileflor",
+    "subtitle": "Descubre toda nuestra gama de flores y arreglos con la calidad premium que nos caracteriza.",
+    "media": "/Hero chileflor/chileflor sin texto.png",
+    "type": "image",
+    "primaryLink": "/catalogo",
+    "primaryText": "Ir al Catálogo"
+  },
+  {
+    "id": 2,
+    "tag": "Próximamente",
+    "title": "Día del Niño",
+    "subtitle": "Sorprende con arreglos y regalos especiales pensados en su felicidad y sonrisas.",
+    "media": "/Hero chileflor/dia del niño 2026.png",
+    "type": "image",
+    "primaryLink": "/catalogo",
+    "primaryText": "Ver Productos"
+  },
+  {
+    "id": 3,
+    "tag": "Especial",
+    "title": "Fiestas Patrias",
+    "subtitle": "Acompaña tus celebraciones con nuestros diseños más tradicionales y hermosos.",
+    "media": "/Hero chileflor/18 sept sin texto.png",
+    "type": "image",
+    "primaryLink": "/catalogo",
+    "primaryText": "Ver Catálogo"
+  }
+]
