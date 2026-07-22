@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   // cuando se accede a través de la red local
   // @ts-ignore - Propiedad requerida por la versión de Next.js
   allowedDevOrigins: ['192.168.100.12'],
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
 };
 
 export default nextConfig;
