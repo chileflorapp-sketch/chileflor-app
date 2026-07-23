@@ -6,13 +6,14 @@ import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import TopBanner from '@/components/TopBanner';
 import { CartProvider } from '@/context/CartContext';
+import { WishlistProvider } from '@/context/WishlistContext';
 import FloatingCartToast from '@/components/FloatingCartToast';
 import MobileNav from '@/components/MobileNav';
 import PageWrapper from '@/components/PageWrapper';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import PremiumPreloader from '@/components/PremiumPreloader';
-import CustomCursor from '@/components/CustomCursor';
 import ScrollReveal from '@/components/ScrollReveal';
+import CartDrawer from '@/components/CartDrawer';
 
 const plusJakartaSans = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
@@ -40,12 +41,13 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-[#F8F9FA] pb-16 md:pb-0 flex flex-col min-h-screen">
         <div className="pollen-container" aria-hidden="true"></div>
         <PremiumPreloader />
-        <CustomCursor />
         <ScrollReveal />
-        <CartProvider>
-          <FloatingCartToast />
-          <TopBanner />
-          <Header />
+        <WishlistProvider>
+          <CartProvider>
+            <CartDrawer />
+            <FloatingCartToast />
+            <TopBanner />
+            <Header />
 
           <main className="flex-grow">
             <PageWrapper>
@@ -58,7 +60,8 @@ export default function RootLayout({
           <Footer />
 
           <MobileNav />
-        </CartProvider>
+          </CartProvider>
+        </WishlistProvider>
       </body>
     </html>
   );

@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 
+import Image from 'next/image';
+
 const SLIDES = [
   {
     id: 1,
@@ -36,17 +38,22 @@ const SLIDES = [
   }
 ];
 
-export default function InfoSlider() {
+export default function InfoSlider({ config, timings }: { config?: any[], timings?: any }) {
   const [current, setCurrent] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
+  const slides = config || [];
+  const transitionTime = timings?.infoSliderTransition || 5000;
+
   useEffect(() => {
-    if (isHovered) return;
+    if (isHovered || slides.length <= 1) return;
     const timer = setInterval(() => {
-      setCurrent((prev) => (prev === SLIDES.length - 1 ? 0 : prev + 1));
-    }, 5000);
+      setCurrent((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
+    }, transitionTime);
     return () => clearInterval(timer);
-  }, [isHovered]);
+  }, [isHovered, slides.length, transitionTime]);
+
+  if (slides.length === 0) return null;
 
   return (
     <section 
@@ -54,7 +61,7 @@ export default function InfoSlider() {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {SLIDES.map((slide, index) => (
+      {slides.map((slide, index) => (
         <div 
           key={slide.id}
           className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${index === current ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
@@ -71,11 +78,17 @@ export default function InfoSlider() {
                  className={`w-full h-full object-cover transition-transform duration-[8000ms] ${index === current ? 'scale-105' : 'scale-100'}`} 
                />
              ) : (
-               <img 
-                 src={slide.media} 
-                 alt={slide.title} 
-                 className={`w-full h-full object-cover transition-transform duration-[8000ms] ${index === current ? 'scale-105' : 'scale-100'}`} 
-               />
+               slide.media && (
+                 <Image 
+                   src={slide.media} 
+                   alt={slide.title || 'Info background'} 
+                   fill
+                   priority={index === 0}
+                   sizes="(max-width: 768px) 100vw, 1024px"
+                   quality={85}
+                   className={`object-cover transition-transform duration-[8000ms] ${index === current ? 'scale-105' : 'scale-100'}`} 
+                 />
+               )
              )}
              <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/10 to-transparent mix-blend-multiply"></div>
              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
@@ -112,13 +125,13 @@ export default function InfoSlider() {
 
       {/* Nav Buttons */}
       <button 
-        onClick={() => setCurrent(current === 0 ? SLIDES.length - 1 : current - 1)}
+        onClick={() => setCurrent(current === 0 ? slides.length - 1 : current - 1)}
         className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-white/30 text-white rounded-full backdrop-blur-md transition-all opacity-0 group-hover:opacity-100"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
       </button>
       <button 
-        onClick={() => setCurrent(current === SLIDES.length - 1 ? 0 : current + 1)}
+        onClick={() => setCurrent(current === slides.length - 1 ? 0 : current + 1)}
         className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-white/30 text-white rounded-full backdrop-blur-md transition-all opacity-0 group-hover:opacity-100"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
@@ -126,7 +139,7 @@ export default function InfoSlider() {
 
       {/* Dots */}
       <div className="absolute bottom-6 left-0 right-0 z-30 flex justify-center gap-2">
-        {SLIDES.map((_, index) => (
+        {slides.map((_, index) => (
           <button 
             key={index}
             onClick={() => setCurrent(index)}

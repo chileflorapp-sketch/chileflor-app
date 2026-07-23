@@ -1,24 +1,35 @@
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 
-// Inicializa el cliente de Mercado Pago.
-// Nota: Cuando tengas tu token real, debes agregarlo a un archivo .env.local como MP_ACCESS_TOKEN
-const client = new MercadoPagoConfig({ 
-  accessToken: process.env.MP_ACCESS_TOKEN || 'TEST-1234567890-TOKEN-FALSO' 
-});
-
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    // Inicializa el cliente de Mercado Pago aquí para que lea el .env más reciente en cada petición
+    const client = new MercadoPagoConfig({ 
+      accessToken: process.env.MP_ACCESS_TOKEN || 'TEST-1234567890-TOKEN-FALSO' 
+    });
     
-    // Mapeamos los productos del carrito al formato requerido por Mercado Pago
-    const items = body.items.map((item: any) => ({
+    const body = await request.json();
+    const { items: cartItems, orderId, envio } = body;
+    
+    // 1. Mapeamos los productos del carrito al formato requerido por Mercado Pago
+    const items = cartItems.map((item: any) => ({
       id: item.id.toString(),
-      title: item.title,
+      title: item.name, // Asegurarnos de usar 'name'
       quantity: Number(item.quantity),
       unit_price: Number(item.price),
       currency_id: 'CLP',
     }));
+
+    // 2. Si hay costos de envío, recargos o descuentos (ya unificados en "envio"), agregamos un ítem adicional
+    if (envio && Number(envio) > 0) {
+      items.push({
+        id: 'ENVIO',
+        title: 'Despacho y Recargos',
+        quantity: 1,
+        unit_price: Number(envio),
+        currency_id: 'CLP',
+      });
+    }
 
     // Instanciamos el creador de preferencias
     const preference = new Preference(client);
@@ -27,12 +38,14 @@ export async function POST(request: Request) {
     const response = await preference.create({
       body: {
         items: items,
+        external_reference: orderId, // Guardar el Order ID para conciliación
         back_urls: {
-          success: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/dedicatoria/ORD-MP-${Date.now()}`,
-          failure: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/checkout`,
-          pending: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/checkout`,
+          success: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/dedicatoria/${orderId}`,
+          failure: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/checkout?error=pago_fallido`,
+          pending: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/checkout?estado=pendiente`,
         },
         auto_return: 'approved',
+        statement_descriptor: 'CHILEFLOR',
       }
     });
 

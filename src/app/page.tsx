@@ -1,46 +1,72 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import HeroSlider from '@/components/HeroSlider';
 import WelcomeBanner from '@/components/WelcomeBanner';
 import InfoSlider from '@/components/InfoSlider';
 import ExperienceBanner from '@/components/ExperienceBanner';
+import SubscriptionBanner from '@/components/SubscriptionBanner';
+import { Loader2 } from 'lucide-react';
 
 import { useCart } from '@/context/CartContext';
 
 export default function HomePage() {
   const { addToCart } = useCart();
   const [catalogoDB, setCatalogoDB] = useState<any[]>([]);
+  const [siteConfig, setSiteConfig] = useState<any>(null);
 
   useEffect(() => {
     fetch('/api/catalogo')
       .then(res => res.json())
       .then(data => setCatalogoDB(data))
       .catch(err => console.error(err));
+      
+    // Usar cache: 'no-store' y un parámetro para evitar cualquier caché
+    fetch(`/api/config?t=${Date.now()}`, { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => setSiteConfig(data))
+      .catch(err => console.error(err));
   }, []);
+
+  if (!siteConfig) {
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>;
+  }
+
+  // Inject dynamic fonts globally for MVP
+  const fontStyle = `
+    :root {
+      --font-heading: "${siteConfig.fonts?.heading || 'Inter'}", sans-serif;
+      --font-body: "${siteConfig.fonts?.body || 'Inter'}", sans-serif;
+    }
+    h1, h2, h3, h4, h5, h6, .font-serif {
+      font-family: var(--font-heading) !important;
+    }
+    body, p, span, a, div {
+      font-family: var(--font-body);
+    }
+  `;
 
   return (
     <div className="flex flex-col min-h-screen">
-      <HeroSlider />
+      <style dangerouslySetInnerHTML={{ __html: fontStyle }} />
+      <HeroSlider config={siteConfig.heroSlider} timings={siteConfig.timings} />
 
-      {/* Category Scroll */}
       <section className="container mx-auto px-4 -mt-8 relative z-30">
-        <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide snap-x relative z-30">
+        <div className="flex gap-3 overflow-x-auto pb-6 scrollbar-hide snap-x relative z-30">
           {[
-            { name: 'Ramos de Flores', link: '/catalogo?cat=Ramos de Flores' },
-            { name: 'Ramos de Rosas', link: '/catalogo?cat=Ramos de Rosas' },
-            { name: 'Día de la Madre', link: '/catalogo?cat=Día de la Madre' },
-            { name: 'Día del Padre', link: '/catalogo?cat=Día del Padre' },
-            { name: 'Bautizos', link: '/catalogo?cat=Bautizos' },
-            { name: 'Matrimonios', link: '/catalogo?cat=Matrimonios' },
-            { name: 'Defunciones', link: '/catalogo?cat=Defunciones' },
-            { name: 'Ocasiones Especiales', link: '/catalogo?cat=Ocasiones Especiales' },
-            { name: 'Amor', link: '/catalogo?cat=Amor' },
-            { name: 'Amistad', link: '/catalogo?cat=Amistad' },
-            { name: 'Accesorios', link: '/catalogo?cat=Accesorios' }
+            { emoji: '🌹', name: 'Rosas', link: '/catalogo?cat=Flores' },
+            { emoji: '💐', name: 'Ramos', link: '/catalogo?cat=Ramos de Flores' },
+            { emoji: '💒', name: 'Matrimonios', link: '/catalogo?cat=Matrimonios' },
+            { emoji: '👶', name: 'Bautizos', link: '/catalogo?cat=Bautizos' },
+            { emoji: '🕊️', name: 'Homenajes', link: '/catalogo?cat=Homenajes' },
+            { emoji: '🎁', name: 'Regalos', link: '/catalogo?cat=Regalos' },
+            { emoji: '🌸', name: 'Día Madre', link: '/catalogo?cat=Día de la Madre' },
+            { emoji: '👔', name: 'Día Padre', link: '/catalogo?cat=Día del Padre' },
+            { emoji: '❤️', name: 'Amor', link: '/catalogo?cat=Amor' },
           ].map((cat, i) => (
             <div key={i} className="snap-start shrink-0">
-              <a href={cat.link} className={`inline-block px-6 py-3 rounded-full font-medium shadow-sm border ${i === 0 ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:border-primary/30'} transition-colors whitespace-nowrap`}>
-                {cat.name}
+              <a href={cat.link} className="inline-flex items-center gap-2 px-5 py-3 rounded-full font-semibold shadow-sm border bg-white text-gray-700 border-gray-200 hover:border-primary hover:text-primary hover:shadow-md transition-all whitespace-nowrap">
+                <span className="text-base">{cat.emoji}</span> {cat.name}
               </a>
             </div>
           ))}
@@ -48,18 +74,20 @@ export default function HomePage() {
       </section>
 
       <section className="container mx-auto px-4 py-8 relative z-30 reveal">
-        <InfoSlider />
+        <InfoSlider config={siteConfig.infoSlider} timings={siteConfig.timings} />
       </section>
 
       <div className="reveal">
-        <ExperienceBanner />
+        <ExperienceBanner config={siteConfig.experienceBanner} />
       </div>
 
       <div className="reveal">
         <WelcomeBanner />
       </div>
 
-
+      <section className="container mx-auto px-4 py-8 reveal">
+        <SubscriptionBanner config={siteConfig.subscriptionBanner} />
+      </section>
 
       {/* Best Sellers Grid */}
       <section className="container mx-auto px-4 py-16 reveal">
@@ -74,13 +102,21 @@ export default function HomePage() {
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {catalogoDB.filter(p => p.estado !== 'fuera_de_temporada')
-            .sort((a, b) => b.ventas - a.ventas)
+          {(Array.isArray(catalogoDB) ? catalogoDB : [])
+            .filter(p => p?.estado !== 'fuera_de_temporada')
+            .sort((a, b) => (b.ventas || 0) - (a.ventas || 0))
             .slice(0, 8)
             .map((item) => (
             <a href={`/catalogo/${item.id}`} key={item.id} className="group flex flex-col bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-premium transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[4/5] relative overflow-hidden bg-gray-50">
-                <img src={item.imagen} alt={item.nombre} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]" />
+                <Image 
+                  src={item.imagen} 
+                  alt={item.nombre} 
+                  fill
+                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  quality={80}
+                  className="object-cover group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]" 
+                />
                 
                 <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
                   {item.badge && (

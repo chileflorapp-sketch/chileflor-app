@@ -77,12 +77,19 @@ export default function CementeriosPage() {
       </section>
 
       {/* Planes de Suscripción */}
-      <section id="planes" className="container mx-auto px-4 py-20 max-w-4xl">
+      <section id="planes" className="container mx-auto px-4 py-20 max-w-6xl">
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
           {/* Decoración */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -mr-20 -mt-20 pointer-events-none"></div>
           
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
+          <div className="relative z-10 flex flex-col lg:flex-row items-center gap-10">
+            
+            {/* Imagen de referencia */}
+            <div className="w-full lg:w-1/3 h-64 lg:h-80 rounded-3xl overflow-hidden shadow-xl shrink-0">
+              <img src="/slider/slider2.png" alt="Referencia de suscripción" className="w-full h-full object-cover" />
+            </div>
+
+            {/* Detalles del plan */}
             <div className="flex-1 text-white">
               <div className="inline-block bg-primary/20 text-primary border border-primary/30 text-xs font-bold px-3 py-1 rounded-full mb-4">
                 PLAN RECOMENDADO
@@ -91,7 +98,7 @@ export default function CementeriosPage() {
               <p className="text-gray-400 mb-6 leading-relaxed">
                 Despreocúpate. Nuestro equipo visitará la sepultura de tu ser querido dos veces al mes para mantenerla impecable.
               </p>
-              <ul className="space-y-4 mb-8">
+              <ul className="space-y-4 mb-8 lg:mb-0">
                 <li className="flex items-center gap-3 text-gray-300">
                   <span className="text-primary">✓</span> Limpieza profunda de lápida.
                 </li>
@@ -104,9 +111,10 @@ export default function CementeriosPage() {
               </ul>
             </div>
             
-            <div className="bg-white rounded-3xl p-8 w-full md:w-80 text-center shadow-xl transform hover:scale-105 transition-transform">
+            {/* Tarjeta de precio */}
+            <div className="bg-white rounded-3xl p-8 w-full lg:w-72 text-center shadow-xl transform hover:scale-105 transition-transform shrink-0">
               <p className="text-gray-500 font-medium mb-2 uppercase text-sm tracking-wider">Valor por Visita</p>
-              <p className="text-5xl font-black text-gray-900 mb-2">$25.990</p>
+              <p className="text-4xl font-black text-gray-900 mb-2">$25.990</p>
               <p className="text-sm text-gray-400 mb-8">Cobro por visita realizada.</p>
               <a href="/cementerios/suscripcion" className="block w-full bg-primary text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/30 hover:bg-primary-dark transition-all">
                 Suscribirse Ahora

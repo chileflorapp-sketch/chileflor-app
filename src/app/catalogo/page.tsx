@@ -3,6 +3,8 @@ import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CATEGORIAS } from '@/data/catalog';
 import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
+import { Heart } from 'lucide-react';
 
 function CatalogoContent() {
   const router = useRouter();
@@ -13,13 +15,15 @@ function CatalogoContent() {
   const [searchInput, setSearchInput] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [catalogoDB, setCatalogoDB] = useState<any[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
   const { addToCart } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
 
   useEffect(() => {
     fetch('/api/catalogo')
       .then(res => res.json())
-      .then(data => setCatalogoDB(data))
-      .catch(err => console.error(err));
+      .then(data => { setCatalogoDB(Array.isArray(data) ? data : []); setLoadingCatalog(false); })
+      .catch(err => { console.error(err); setLoadingCatalog(false); });
   }, []);
 
   useEffect(() => {
@@ -38,7 +42,13 @@ function CatalogoContent() {
   }, [activeCategory]);
 
   const filteredProducts = useMemo(() => {
-    let result = catalogoDB.filter(p => p.estado !== 'fuera_de_temporada'); // Regla: Ocultar fuera de temporada
+    if (!Array.isArray(catalogoDB) || catalogoDB.length === 0) return [];
+
+    // Excluir fuera de temporada (la regla de oro del catálogo)
+    let result = catalogoDB.filter(p => {
+      const estado = (p.estado || '').toLowerCase().trim();
+      return estado !== 'fuera_de_temporada' && estado !== 'inactivo';
+    });
 
     // Filtro Categoría Madre
     if (activeCategory !== 'Todos') {
@@ -54,14 +64,14 @@ function CatalogoContent() {
     if (appliedSearch) {
       const term = appliedSearch.toLowerCase().trim();
       result = result.filter(p => {
-        return p.nombre.toLowerCase().includes(term) || 
-               p.categoria.toLowerCase().includes(term) ||
-               p.subcategoria.toLowerCase().includes(term);
+        return (p.nombre || '').toLowerCase().includes(term) || 
+               (p.categoria || '').toLowerCase().includes(term) ||
+               (p.subcategoria || '').toLowerCase().includes(term);
       });
     }
 
     return result;
-  }, [activeCategory, activeSubcategory, appliedSearch]);
+  }, [catalogoDB, activeCategory, activeSubcategory, appliedSearch]);
 
   const handleApplyFilters = () => {
     setAppliedSearch(searchInput);
@@ -158,11 +168,16 @@ function CatalogoContent() {
         </aside>
 
         <main className="flex-1">
-          {filteredProducts.length === 0 ? (
+          {loadingCatalog ? (
+            <div className="bg-white rounded-3xl p-16 text-center border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-4">
+              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-gray-500">Cargando catálogo...</p>
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="bg-white rounded-3xl p-16 text-center border border-gray-100 shadow-sm flex flex-col items-center justify-center">
-              <span className="text-6xl mb-4 opacity-50">🥀</span>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Fuera de Temporada</h3>
-              <p className="text-gray-500 mb-6">Pronto volveremos a tener stock para esta colección.</p>
+              <span className="text-6xl mb-4 opacity-50">🌸</span>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Sin resultados</h3>
+              <p className="text-gray-500 mb-6">No encontramos productos con esos filtros.</p>
               <button onClick={handleClearFilters} className="text-primary font-medium hover:underline">
                 Volver al catálogo principal
               </button>
@@ -171,7 +186,7 @@ function CatalogoContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredProducts.map((item) => (
                 <a href={`/catalogo/${item.id}`} key={item.id} className="group flex flex-col bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-premium transition-all duration-500 hover:-translate-y-2">
-                  <div className={`aspect-[4/5] relative overflow-hidden ${item.tags_visuales.fondo === 'neutro' ? 'bg-gray-50' : item.tags_visuales.fondo === 'blanco' ? 'bg-white' : 'bg-gray-100'}`}>
+                  <div className={`aspect-[4/5] relative overflow-hidden ${item.tags_visuales?.fondo === 'neutro' ? 'bg-gray-50' : item.tags_visuales?.fondo === 'blanco' ? 'bg-white' : 'bg-gray-100'}`}>
                     <img 
                       src={item.imagen} 
                       alt={item.nombre} 
@@ -196,6 +211,24 @@ function CatalogoContent() {
                       </div>
                     )}
                     
+                    {/* Wishlist Button */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleWishlist({
+                          id: item.id,
+                          name: item.nombre,
+                          price: item.precio_base,
+                          image: item.imagen,
+                          category: item.categoria
+                        });
+                      }}
+                      className="absolute bottom-3 right-3 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-gray-500 hover:text-primary transition-all shadow-sm hover:scale-105 active:scale-95"
+                    >
+                      <Heart size={16} className={isInWishlist(item.id) ? 'fill-primary text-primary' : ''} />
+                    </button>
+
                     {/* Subtle gradient overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                   </div>

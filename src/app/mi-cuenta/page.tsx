@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useClub } from '@/hooks/useClub';
+import { useWishlist } from '@/context/WishlistContext';
 
 const COMUNAS_RM = [
   'Cerrillos', 'Cerro Navia', 'Conchalí', 'El Bosque', 'Estación Central', 'Huechuraba', 'Independencia', 
@@ -35,6 +36,7 @@ export default function MiCuentaPage() {
   const [activeTab, setActiveTab] = useState('datos');
   const [userName, setUserName] = useState<string>('Cargando...');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAppLoading, setIsAppLoading] = useState(true);
   
   // Estados para el formulario de Mis Datos
   const [nombre, setNombre] = useState('');
@@ -53,6 +55,7 @@ export default function MiCuentaPage() {
   // Estados de Pedidos
   const [pedidos, setPedidos] = useState<PedidoItem[]>([]);
   const { points: clubPoints, tier } = useClub();
+  const { wishlistItems, toggleWishlist } = useWishlist();
 
   // Estados de Agenda
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
@@ -76,7 +79,8 @@ export default function MiCuentaPage() {
       const { data, error } = await supabase.auth.getUser();
       
       if (error || !data.user) {
-        window.location.href = '/registro';
+        // Redirección por fallback si falla el middleware (o carga muy rápido)
+        window.location.href = '/login';
         return;
       }
       
@@ -129,6 +133,8 @@ export default function MiCuentaPage() {
         }
         setPedidos(pedidosData);
       }
+      
+      setIsAppLoading(false);
     };
     
     fetchUserAndData();
@@ -350,6 +356,28 @@ END:VCALENDAR`;
     }
   };
 
+  if (isAppLoading) {
+    return (
+      <div className="container mx-auto px-4 py-16 max-w-5xl">
+        <div className="animate-pulse space-y-8">
+          <div className="flex justify-between items-center">
+            <div className="space-y-3">
+              <div className="h-8 bg-gray-200 rounded w-48"></div>
+              <div className="h-4 bg-gray-100 rounded w-64"></div>
+            </div>
+            <div className="h-16 bg-gray-200 rounded-2xl w-40"></div>
+          </div>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="h-12 bg-gray-200 rounded-full w-24"></div>
+            ))}
+          </div>
+          <div className="h-96 bg-gray-100 rounded-3xl w-full"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl animate-in fade-in duration-500 relative">
       {/* Toast Notification */}
@@ -384,7 +412,7 @@ END:VCALENDAR`;
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide relative z-30">
-        {['datos', 'pedidos', 'agenda', 'suscripciones'].map(tab => (
+        {['datos', 'pedidos', 'agenda', 'suscripciones', 'favoritos'].map(tab => (
           <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -768,6 +796,50 @@ END:VCALENDAR`;
                 </div>
               </div>
             </div>
+          </div>
+        )}
+        {/* PESTAÑA: FAVORITOS */}
+        {activeTab === 'favoritos' && (
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Mis Favoritos</h2>
+            <p className="text-gray-500 mb-8">Los productos que te han encantado y guardaste para después.</p>
+            
+            {wishlistItems.length === 0 ? (
+              <div className="text-center py-12">
+                <span className="text-4xl block mb-4">❤️</span>
+                <h3 className="text-lg font-bold text-gray-900">Aún no tienes favoritos</h3>
+                <p className="text-gray-500 mb-6">Explora nuestro catálogo y guarda lo que más te guste.</p>
+                <a href="/catalogo" className="bg-primary text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-primary/30 transition-all hover:bg-primary-dark">
+                  Ir al Catálogo
+                </a>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {wishlistItems.map((item) => (
+                  <div key={item.id} className="group relative bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-premium transition-all hover:-translate-y-1">
+                    <button
+                      onClick={() => toggleWishlist(item)}
+                      className="absolute top-3 right-3 z-10 w-8 h-8 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-primary shadow-sm hover:scale-110 transition-transform"
+                    >
+                      <span className="text-lg leading-none">❤️</span>
+                    </button>
+                    
+                    <a href={`/catalogo/${item.id}`} className="block">
+                      <div className="aspect-[4/5] bg-gray-50 overflow-hidden relative">
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <div className="absolute top-3 left-3 bg-white/90 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest text-gray-800">
+                          {item.category}
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        <h4 className="font-bold text-gray-900 line-clamp-1">{item.name}</h4>
+                        <p className="text-primary font-black mt-1">${item.price.toLocaleString('es-CL')}</p>
+                      </div>
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -20,6 +20,10 @@ interface CartContextType {
   // Toast state
   toastProduct: CartItem | null;
   hideToast: () => void;
+  // Drawer state
+  isCartOpen: boolean;
+  openCart: () => void;
+  closeCart: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -28,6 +32,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [toastProduct, setToastProduct] = useState<CartItem | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Load from local storage
   useEffect(() => {
@@ -49,15 +54,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [items, isMounted]);
 
-  // Auto-hide toast after 5 seconds
+  // Auto-hide toast after 4 seconds
   useEffect(() => {
     if (toastProduct) {
       const timer = setTimeout(() => {
         setToastProduct(null);
-      }, 5000);
+      }, 4000);
       return () => clearTimeout(timer);
     }
   }, [toastProduct]);
+
+  // Lock body scroll when cart is open
+  useEffect(() => {
+    if (isCartOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isCartOpen]);
 
   const addToCart = (product: { id: number; name: string; price: number; image: string }) => {
     setItems(prev => {
@@ -68,7 +83,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return [...prev, { ...product, quantity: 1 }];
       }
     });
-
     setToastProduct({ ...product, quantity: 1 } as CartItem);
   };
 
@@ -92,11 +106,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setToastProduct(null);
   };
 
+  const openCart = () => setIsCartOpen(true);
+  const closeCart = () => setIsCartOpen(false);
+
   const cartTotal = items.reduce((total, item) => total + (item.price * item.quantity), 0);
   const cartCount = items.reduce((count, item) => count + item.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount, toastProduct, hideToast }}>
+    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount, toastProduct, hideToast, isCartOpen, openCart, closeCart }}>
       {children}
     </CartContext.Provider>
   );

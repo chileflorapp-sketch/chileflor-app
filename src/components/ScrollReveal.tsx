@@ -7,32 +7,39 @@ export default function ScrollReveal() {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Función para manejar la intersección
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           entry.target.classList.add('active');
-          // Opcional: Desobservar si solo queremos que aparezca una vez
-          // observer.unobserve(entry.target); 
-        } else {
-          // Remover si queremos que vuelva a animarse al hacer scroll arriba/abajo
-          // entry.target.classList.remove('active');
         }
       });
     }, {
-      threshold: 0.1, // 10% del elemento debe ser visible para dispararse
-      rootMargin: '0px 0px -50px 0px' // Se activa un poco antes de llegar al borde inferior
+      threshold: 0.05,
+      rootMargin: '0px 0px 50px 0px'
     });
 
-    // Encontrar todos los elementos con la clase .reveal
-    const elements = document.querySelectorAll('.reveal');
-    elements.forEach((el) => observer.observe(el));
+    const updateObservers = () => {
+      const elements = document.querySelectorAll('.reveal:not(.active)');
+      elements.forEach((el) => observer.observe(el));
+    };
+
+    updateObservers();
+
+    // Observar cambios en el DOM para capturar elementos renderizados de forma asíncrona (como los sliders)
+    const mutationObserver = new MutationObserver(() => {
+      updateObservers();
+    });
+
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
 
     return () => {
-      elements.forEach((el) => observer.unobserve(el));
+      mutationObserver.disconnect();
       observer.disconnect();
     };
-  }, [pathname]); // Re-ejecutar cada vez que cambiamos de página
+  }, [pathname]);
 
-  return null; // Este componente no renderiza nada en pantalla
+  return null;
 }

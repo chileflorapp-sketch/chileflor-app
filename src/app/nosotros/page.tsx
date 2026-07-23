@@ -1,7 +1,29 @@
 'use client';
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { Loader2 } from 'lucide-react';
 
 export default function NosotrosPage() {
+  const [cfg, setCfg] = useState<any>(null);
+
+  useEffect(() => {
+    fetch(`/api/config?t=${Date.now()}`, { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => setCfg(d?.nosotros || null))
+      .catch(console.error);
+  }, []);
+
+  if (!cfg) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const { hero, fundadores, taller, stats, equipo, valores } = cfg;
+
   return (
     <div className="min-h-screen bg-[#FDFBF7] pt-24 pb-20">
       
@@ -14,7 +36,7 @@ export default function NosotrosPage() {
             transition={{ duration: 0.6 }}
             className="text-primary font-bold tracking-widest uppercase text-sm mb-4"
           >
-            Nuestra Historia
+            {hero.badge}
           </motion.p>
           <motion.h1 
             initial={{ opacity: 0, y: 10 }}
@@ -22,7 +44,7 @@ export default function NosotrosPage() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-5xl md:text-6xl font-serif font-bold text-gray-900 mb-8 leading-tight"
           >
-            La unión de dos legados florales.
+            {hero.title}
           </motion.h1>
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
@@ -30,15 +52,19 @@ export default function NosotrosPage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative w-full h-[60vh] rounded-[2.5rem] overflow-hidden shadow-2xl"
           >
-            <img 
-              src="https://images.unsplash.com/photo-1596160534241-11a546c4ab0a?auto=format&fit=crop&w=2000&q=80" 
-              alt="Florería con arreglos hermosos"
-              className="w-full h-full object-cover"
+            <Image
+              src={hero.heroImage}
+              alt={hero.title}
+              fill
+              priority
+              sizes="100vw"
+              quality={85}
+              className="object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
               <div className="p-10 md:p-16 text-left">
                 <p className="text-white/90 text-lg md:text-2xl font-serif max-w-2xl leading-relaxed">
-                  "Chileflor nace de la colaboración de mentes apasionadas por transformar emociones en arte natural."
+                  "{hero.quote}"
                 </p>
               </div>
             </div>
@@ -46,7 +72,7 @@ export default function NosotrosPage() {
         </div>
       </section>
 
-      {/* Orígenes Section */}
+      {/* Fundadores Section */}
       <section className="container mx-auto px-4 max-w-4xl mb-24">
         <div className="grid md:grid-cols-2 gap-16 items-center">
           <motion.div
@@ -55,13 +81,9 @@ export default function NosotrosPage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-3xl font-serif font-bold text-gray-900 mb-6">Nuestros Fundadores</h2>
-            <p className="text-gray-600 leading-relaxed mb-4 text-lg">
-              Chileflor no es solo una florería digital, es el resultado de la unión estratégica entre dos grandes pioneros de la industria en Chile: <strong>Paco Florería</strong> y <strong>Florería Los Mellizos</strong>.
-            </p>
-            <p className="text-gray-600 leading-relaxed text-lg">
-              Al combinar décadas de experiencia, logística especializada y un compromiso inquebrantable con la calidad, logramos ofrecer una experiencia floral y un servicio de mantención de cementerios sin precedentes en la Región Metropolitana.
-            </p>
+            <h2 className="text-3xl font-serif font-bold text-gray-900 mb-6">{fundadores.title}</h2>
+            <p className="text-gray-600 leading-relaxed mb-4 text-lg">{fundadores.text1}</p>
+            <p className="text-gray-600 leading-relaxed text-lg">{fundadores.text2}</p>
           </motion.div>
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
@@ -71,20 +93,100 @@ export default function NosotrosPage() {
             className="grid grid-cols-2 gap-4"
           >
             <div className="space-y-4">
-              <img src="https://images.unsplash.com/photo-1600861194942-f883de0dfe96?auto=format&fit=crop&w=500&q=80" alt="Detalle Floral" className="w-full h-48 object-cover rounded-2xl shadow-md" />
+              <div className="relative w-full h-48 rounded-2xl overflow-hidden shadow-md">
+                <Image src={fundadores.founder1Image} alt={fundadores.founder1Name} fill sizes="250px" quality={80} className="object-cover" />
+              </div>
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="font-bold text-gray-900 mb-1">Paco Florería</h3>
-                <p className="text-sm text-gray-500">Tradición y Excelencia</p>
+                <h3 className="font-bold text-gray-900 mb-1">{fundadores.founder1Name}</h3>
+                <p className="text-sm text-gray-500">{fundadores.founder1Role}</p>
               </div>
             </div>
             <div className="space-y-4 mt-8">
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="font-bold text-gray-900 mb-1">Los Mellizos</h3>
-                <p className="text-sm text-gray-500">Logística y Vanguardia</p>
+                <h3 className="font-bold text-gray-900 mb-1">{fundadores.founder2Name}</h3>
+                <p className="text-sm text-gray-500">{fundadores.founder2Role}</p>
               </div>
-              <img src="https://images.unsplash.com/photo-1563241598-a28a2a8db422?auto=format&fit=crop&w=500&q=80" alt="Taller Floral" className="w-full h-48 object-cover rounded-2xl shadow-md" />
+              <div className="relative w-full h-48 rounded-2xl overflow-hidden shadow-md">
+                <Image src={fundadores.founder2Image} alt={fundadores.founder2Name} fill sizes="250px" quality={80} className="object-cover" />
+              </div>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Historias de Taller */}
+      <section className="container mx-auto px-4 max-w-5xl mb-24">
+        <div className="bg-white rounded-[2.5rem] p-10 md:p-16 shadow-xl border border-gray-100 flex flex-col md:flex-row gap-12 items-center">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="w-full md:w-1/2 relative h-80 rounded-3xl overflow-hidden shadow-lg"
+          >
+            <Image src={taller.tallerImage} alt="Taller floral Chileflor" fill sizes="(max-width: 768px) 100vw, 50vw" quality={80} className="object-cover" />
+            <div className="absolute inset-0 bg-primary/10 mix-blend-overlay"></div>
+          </motion.div>
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="w-full md:w-1/2"
+          >
+            <span className="text-primary font-bold tracking-widest uppercase text-xs mb-3 block">{taller.badge}</span>
+            <h2 className="text-3xl font-serif font-bold text-gray-900 mb-6">{taller.title}</h2>
+            <p className="text-gray-600 leading-relaxed mb-4">{taller.text1}</p>
+            <p className="text-gray-600 leading-relaxed">{taller.text2}</p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Datos Interesantes */}
+      <section className="container mx-auto px-4 max-w-5xl mb-24">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-serif font-bold text-gray-900">Datos Curiosos</h2>
+          <p className="text-gray-500 mt-2">Detrás de nuestros números hay miles de sonrisas.</p>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {stats.map((dato: any, i: number) => (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm text-center hover:shadow-lg transition-shadow hover:border-primary/20"
+            >
+              <div className="text-4xl font-black text-gray-900 mb-2">{dato.num}</div>
+              <div className="text-sm font-bold text-gray-500 uppercase tracking-wider">{dato.text}</div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Equipo */}
+      <section className="container mx-auto px-4 max-w-5xl mb-24">
+        <div className="text-center mb-16">
+          <span className="text-primary font-bold tracking-widest uppercase text-xs mb-3 block">Nuestro Equipo</span>
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900">Los Artesanos Florales</h2>
+        </div>
+        <div className="grid md:grid-cols-3 gap-8">
+          {equipo.map((person: any, i: number) => (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.15 }}
+              className="group text-center"
+            >
+              <div className="w-48 h-48 mx-auto rounded-full overflow-hidden mb-6 shadow-xl border-4 border-white group-hover:border-primary/20 transition-colors relative">
+                <Image src={person.img} alt={person.name} fill sizes="192px" quality={80} className="object-cover group-hover:scale-110 transition-transform duration-500" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-1">{person.name}</h3>
+              <p className="text-primary font-medium text-sm mb-4">{person.role}</p>
+              <p className="text-gray-500 text-sm leading-relaxed px-4">{person.desc}</p>
+            </motion.div>
+          ))}
         </div>
       </section>
 
@@ -95,13 +197,8 @@ export default function NosotrosPage() {
             <h2 className="text-4xl font-serif font-bold mb-6">Nuestro Compromiso</h2>
             <div className="w-20 h-1 bg-primary mx-auto rounded-full"></div>
           </div>
-          
           <div className="grid md:grid-cols-3 gap-10">
-            {[
-              { icon: '🌱', title: 'Frescura Garantizada', desc: 'Trabajamos con agricultores locales para asegurar que cada flor llegue en su estado más vibrante.' },
-              { icon: '🚀', title: 'Logística de Precisión', desc: 'Una flota dedicada para despachos rápidos y cuidadosos en La Florida, Puente Alto y todo Santiago.' },
-              { icon: '❤️', title: 'Empatía y Respeto', desc: 'Entendemos el valor de cada entrega, ya sea para celebrar la vida o para honrar la memoria en nuestros cementerios.' },
-            ].map((valor, i) => (
+            {valores.map((valor: any, i: number) => (
               <motion.div 
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
@@ -122,5 +219,3 @@ export default function NosotrosPage() {
     </div>
   );
 }
-
-

@@ -49,6 +49,21 @@
     100% { background-position: 120px 120px, -180px 180px, 240px -240px; }
   }
 
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 4px; }
+  
+  @keyframes gradient-x {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+  .animate-gradient-x {
+    animation: gradient-x 3s ease infinite;
+    background-size: 200% 200%;
+  }
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -93,14 +108,4 @@
   }
   .animate-progress-bar {
     animation: progress-bar 1.5s ease-in-out forwards;
-  }
-
-  /* Ocultar el cursor por defecto si la media es hover */
-  @media (pointer: fine) {
-    body {
-      cursor: none !important;
-    }
-    a, button, input, select, textarea, [role="button"] {
-      cursor: none !important;
-    }
   }

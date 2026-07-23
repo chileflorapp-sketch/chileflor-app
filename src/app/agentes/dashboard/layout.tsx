@@ -2,7 +2,7 @@
 
 import { useAgentAuth } from '@/context/AgentAuthContext';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Package, Truck, Users, ShieldAlert, LogOut } from 'lucide-react';
+import { LayoutDashboard, Package, Truck, Users, ShieldAlert, LogOut, ExternalLink } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { agent, logout } = useAgentAuth();
@@ -20,6 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (agent.role === 'ADMIN') {
     menu.push({ name: 'Agentes', path: '/agentes/dashboard/agentes', icon: <ShieldAlert size={18} /> });
+    menu.push({ name: 'Apariencia Web', path: '/agentes/dashboard/apariencia', icon: <LayoutDashboard size={18} /> }); // Puedes usar otro icono si prefieres
   }
 
   return (
@@ -69,10 +70,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
         </div>
 
-        <div className="mt-auto p-6">
+        <div className="mt-auto p-6 flex flex-col gap-2">
+          <a 
+            href="/"
+            className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white border border-[#2A2A2C] rounded-xl text-sm font-medium transition-colors hover:bg-white/5 hover:border-gray-600"
+          >
+            <ExternalLink size={18} />
+            Ver Tienda
+          </a>
           <button 
             onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-white rounded-xl text-sm font-medium transition-colors hover:bg-white/5"
+            className="w-full flex items-center gap-3 px-4 py-3 text-red-500/70 hover:text-red-500 rounded-xl text-sm font-medium transition-colors hover:bg-red-500/10"
           >
             <LogOut size={18} />
             Cerrar Sesión
