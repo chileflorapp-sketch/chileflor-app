@@ -4,8 +4,8 @@ import InteractionClient from './InteractionClient';
 
 export const revalidate = 0; // Disable caching for this route
 
-export default async function TarjetaPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function TarjetaPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
   // 1. Fetch card data
   const { data: tarjeta, error } = await supabase
@@ -18,12 +18,25 @@ export default async function TarjetaPage({ params }: { params: { id: string } }
     notFound();
   }
 
-  // 2. Check 48h expiration
+  // 2. Determine expiration
   const createdAt = new Date(tarjeta.created_at);
   const now = new Date();
-  const diffHours = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+  const hoursAlive = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
 
-  if (diffHours > 48) {
+  // Rule: If thanked, visible for 48h after thanks. If not thanked, expires at 72h.
+  let isExpired = false;
+
+  if (tarjeta.agradecimiento && tarjeta.agradecido_at) {
+    // Thanked: check if 48h passed since thanks
+    const agradecidoAt = new Date(tarjeta.agradecido_at);
+    const hoursSinceThanks = (now.getTime() - agradecidoAt.getTime()) / (1000 * 60 * 60);
+    isExpired = hoursSinceThanks > 48;
+  } else {
+    // Not thanked: expires after 72h
+    isExpired = hoursAlive > 72;
+  }
+
+  if (isExpired) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4 text-center">
         <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-black/50">
@@ -31,10 +44,20 @@ export default async function TarjetaPage({ params }: { params: { id: string } }
         </div>
         <h1 className="text-3xl font-black text-white mb-3">La magia se desvaneció</h1>
         <p className="text-gray-400 max-w-sm">
-          Esta sorpresa fue programada para autodestruirse después de 48 horas. ¡Esperamos que la hayas disfrutado!
+          Esta sorpresa fue creada para ser efímera. ¡Esperamos que la hayas disfrutado mientras estuvo aquí!
         </p>
       </div>
     );
+  }
+
+  // Calculate remaining time for display
+  let hoursRemaining: number;
+  if (tarjeta.agradecimiento && tarjeta.agradecido_at) {
+    const agradecidoAt = new Date(tarjeta.agradecido_at);
+    const hoursSinceThanks = (now.getTime() - agradecidoAt.getTime()) / (1000 * 60 * 60);
+    hoursRemaining = Math.max(0, 48 - hoursSinceThanks);
+  } else {
+    hoursRemaining = Math.max(0, 72 - hoursAlive);
   }
 
   return (
@@ -53,6 +76,9 @@ export default async function TarjetaPage({ params }: { params: { id: string } }
           <h1 className="text-4xl font-black text-gray-900 tracking-tight leading-none mb-3">
             Alguien pensó en ti
           </h1>
+          <p className="text-gray-400 text-sm">
+            ⏳ Esta experiencia desaparece en {Math.floor(hoursRemaining)}h {Math.floor((hoursRemaining % 1) * 60)}m
+          </p>
         </div>
 
         {/* The Card */}

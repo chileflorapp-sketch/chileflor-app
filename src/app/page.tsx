@@ -312,9 +312,48 @@ function NewsletterBanner() {
   );
 }
 
-// ── Componente: Producto card premium ──
+// ── Componente: Quick App Actions (Accesos Rápidos Estilo App) ──
+const APP_SHORTCUTS = [
+  { icon: '⚡', label: 'Entrega Hoy', link: '/catalogo?badge=Entrega+Hoy', badge: 'Hoy', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30' },
+  { icon: '🌹', label: 'Rosas', link: '/catalogo?cat=Flores', color: 'bg-rose-500/10 text-rose-600 border-rose-500/30' },
+  { icon: '💐', label: 'Ramos', link: '/catalogo?cat=Ramos de Flores', color: 'bg-pink-500/10 text-pink-600 border-pink-500/30' },
+  { icon: '💌', label: 'Tarjeta QR', link: '/dedicatoria/nueva', badge: 'Nuevo', color: 'bg-fuchsia-500/10 text-fuchsia-600 border-fuchsia-500/30' },
+  { icon: '📱', label: 'Escáner QR', link: '/escaner', color: 'bg-purple-500/10 text-purple-600 border-purple-500/30' },
+  { icon: '🕊️', label: 'Homenajes', link: '/catalogo?cat=Homenajes', color: 'bg-slate-500/10 text-slate-600 border-slate-500/30' },
+  { icon: '🎁', label: 'Regalos', link: '/catalogo?cat=Regalos', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
+  { icon: '⛪', label: 'Cementerios', link: '/cementerios', color: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
+];
+
+function QuickAppActions() {
+  return (
+    <section className="bg-white py-6 border-b border-gray-100 shadow-sm sticky top-[60px] md:top-[70px] z-30 backdrop-blur-md bg-white/90">
+      <div className="container mx-auto px-4">
+        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 snap-x">
+          {APP_SHORTCUTS.map((item, i) => (
+            <a
+              key={i}
+              href={item.link}
+              className={`shrink-0 snap-start flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border ${item.color} font-bold text-xs md:text-sm hover:scale-105 active:scale-95 transition-all shadow-xs relative group`}
+            >
+              <span className="text-base">{item.icon}</span>
+              <span>{item.label}</span>
+              {item.badge && (
+                <span className="text-[9px] bg-primary text-white font-extrabold uppercase px-1.5 py-0.5 rounded-full leading-none shadow-xs">
+                  {item.badge}
+                </span>
+              )}
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Componente: Producto card premium (Optimizado para Touch/Móvil) ──
 function ProductCard({ item, addToCart, toggleWishlist, isInWishlist }: any) {
   const [wishActive, setWishActive] = useState(false);
+  const [added, setAdded] = useState(false);
 
   const handleWish = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -332,10 +371,12 @@ function ProductCard({ item, addToCart, toggleWishlist, isInWishlist }: any) {
       price: item.precio_base,
       image: item.imagen,
     });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
   };
 
   return (
-    <a href={`/catalogo/${item.id}`} className="group flex flex-col bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 relative">
+    <a href={`/catalogo/${item.id}`} className="group flex flex-col bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 relative">
       <div className="aspect-[4/5] relative overflow-hidden bg-gray-50">
         <Image
           src={item.imagen}
@@ -343,17 +384,14 @@ function ProductCard({ item, addToCart, toggleWishlist, isInWishlist }: any) {
           fill
           sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
           quality={85}
-          className="object-cover group-hover:scale-110 transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
+          className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
         />
-
-        {/* Gradient hover overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
         {/* Badge */}
         {item.badge && (
-          <div className="absolute top-3 left-3 z-10">
-            <span className={`text-[10px] font-extrabold uppercase tracking-widest px-3 py-1.5 rounded-full shadow-md ${
-              item.badge.includes('Entrega Hoy') ? 'bg-yellow-400 text-yellow-900' :
+          <div className="absolute top-2.5 left-2.5 z-10">
+            <span className={`text-[9px] md:text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-md ${
+              item.badge.includes('Entrega Hoy') ? 'bg-yellow-400 text-yellow-950' :
               item.badge.includes('Premium') ? 'bg-gray-900 text-yellow-400' :
               'bg-primary text-white'
             }`}>
@@ -363,36 +401,45 @@ function ProductCard({ item, addToCart, toggleWishlist, isInWishlist }: any) {
         )}
 
         {/* Wishlist button */}
-        <button onClick={handleWish} className="absolute top-3 right-3 z-10 w-9 h-9 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform duration-200">
+        <button 
+          onClick={handleWish} 
+          className="absolute top-2.5 right-2.5 z-10 w-8 h-8 md:w-9 md:h-9 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-90 transition-transform"
+          aria-label="Guardar en favoritos"
+        >
           <Heart className={`w-4 h-4 transition-colors ${wishActive ? 'fill-primary text-primary' : 'text-gray-400'}`} />
         </button>
 
-        {/* Quick add - aparece en hover */}
+        {/* Quick Add Button Mobile & Desktop - Siempre visible y fácil de tocar */}
         <button
           onClick={handleAdd}
-          className="absolute bottom-4 left-4 right-4 z-10 bg-white text-gray-900 font-bold py-3 rounded-2xl opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-400 text-sm hover:bg-primary hover:text-white flex items-center justify-center gap-2"
+          className={`absolute bottom-2.5 right-2.5 z-10 p-3 rounded-2xl font-bold shadow-lg transition-all active:scale-90 flex items-center justify-center gap-1.5 ${
+            added 
+              ? 'bg-green-500 text-white scale-105' 
+              : 'bg-primary text-white hover:bg-primary-dark shadow-primary/30'
+          }`}
+          title="Agregar al carrito"
         >
           <ShoppingBag className="w-4 h-4" />
-          Agregar al carrito
+          <span className="hidden md:inline text-xs font-bold">{added ? '¡Agregado!' : 'Agregar'}</span>
         </button>
       </div>
 
-      <div className="p-5 flex flex-col flex-grow justify-between">
+      <div className="p-4 flex flex-col flex-grow justify-between">
         <div>
-          <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-1">{item.subcategoria}</p>
-          <h3 className="font-bold text-gray-900 line-clamp-2 text-base group-hover:text-primary transition-colors leading-snug">
+          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">{item.subcategoria || item.categoria}</p>
+          <h3 className="font-bold text-gray-900 line-clamp-2 text-sm md:text-base group-hover:text-primary transition-colors leading-snug">
             {item.nombre}
           </h3>
         </div>
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-3 flex items-center justify-between pt-2 border-t border-gray-50">
           <div>
-            <span className="font-black text-xl text-gray-900 tracking-tight">
+            <span className="font-black text-lg md:text-xl text-gray-900 tracking-tight">
               ${item.precio_base.toLocaleString('es-CL')}
             </span>
           </div>
-          <div className="flex items-center gap-1 text-xs text-gray-400">
+          <div className="flex items-center gap-1 text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md">
             <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-            <span className="font-medium">4.9</span>
+            <span className="font-bold text-gray-700">4.9</span>
           </div>
         </div>
       </div>
@@ -421,8 +468,8 @@ function UrgencyBar() {
   const pad = (n: number) => String(n).padStart(2, '0');
 
   return (
-    <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-b border-gray-700 py-3 px-4 relative z-20">
-      <div className="container mx-auto flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-white text-sm">
+    <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-b border-gray-700 py-2.5 px-4 relative z-20">
+      <div className="container mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 text-white text-sm">
         <div className="flex items-center gap-2">
           <span className="relative flex w-2 h-2">
             <span className="animate-ring absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75" />
@@ -432,15 +479,15 @@ function UrgencyBar() {
         </div>
         <span className="text-gray-600 hidden sm:block">|</span>
         <div className="flex items-center gap-2">
-          <span className="text-gray-300 text-xs">Tiempo límite para pedir:</span>
+          <span className="text-gray-300 text-xs">Cierre de despacho hoy en:</span>
           <div className="flex gap-1">
             {[pad(timeLeft.h), pad(timeLeft.m), pad(timeLeft.s)].map((unit, i) => (
-              <span key={i} className="bg-primary text-white font-mono font-black text-sm px-2 py-0.5 rounded-md">{unit}</span>
+              <span key={i} className="bg-primary text-white font-mono font-black text-xs md:text-sm px-2 py-0.5 rounded-md">{unit}</span>
             ))}
           </div>
         </div>
-        <a href="/catalogo" className="hidden md:flex items-center gap-1 text-primary text-xs font-bold hover:underline">
-          Ver productos <ArrowRight className="w-3 h-3" />
+        <a href="/catalogo?badge=Entrega+Hoy" className="hidden md:flex items-center gap-1 text-primary text-xs font-bold hover:underline">
+          Ver disponibles <ArrowRight className="w-3 h-3" />
         </a>
       </div>
     </div>
@@ -453,6 +500,7 @@ export default function HomePage() {
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [catalogoDB, setCatalogoDB] = useState<any[]>([]);
   const [siteConfig, setSiteConfig] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<string>('todos');
 
   useReveal();
 
@@ -493,20 +541,30 @@ export default function HomePage() {
     }
   `;
 
-  const bestSellers = (Array.isArray(catalogoDB) ? catalogoDB : [])
-    .filter(p => p?.estado !== 'fuera_de_temporada')
-    .sort((a, b) => (b.ventas || 0) - (a.ventas || 0))
-    .slice(0, 8);
+  // Filtrado de productos dinámico en la portada
+  const allProducts = (Array.isArray(catalogoDB) ? catalogoDB : []).filter(p => p?.estado !== 'fuera_de_temporada');
+
+  const filteredProducts = allProducts.filter(p => {
+    if (activeTab === 'todos') return true;
+    if (activeTab === 'rosas') return p.categoria === 'Flores' || p.nombre.toLowerCase().includes('rosa');
+    if (activeTab === 'ramos') return p.categoria === 'Ramos de Flores' || p.nombre.toLowerCase().includes('ramo');
+    if (activeTab === 'hoy') return p.badge?.includes('Entrega Hoy');
+    if (activeTab === 'regalos') return p.categoria === 'Regalos';
+    return true;
+  }).slice(0, 8);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-gray-50/50">
       <style dangerouslySetInnerHTML={{ __html: fontStyle }} />
 
-      {/* Hero */}
+      {/* Hero Slider */}
       <HeroSlider config={siteConfig.heroSlider} timings={siteConfig.timings} />
 
-      {/* Barra de urgencia sticky */}
+      {/* Barra de urgencia */}
       <UrgencyBar />
+
+      {/* Accesos rápidos Estilo App */}
+      <QuickAppActions />
 
       {/* Ticker de confianza */}
       <TrustTicker />
@@ -520,30 +578,48 @@ export default function HomePage() {
       {/* Stats */}
       <StatsBar />
 
-      {/* Más Vendidos */}
-      <section className="container mx-auto px-4 py-20 reveal">
-        <div className="flex items-end justify-between mb-10">
+      {/* Catálogo Destacado Interactivo estilo App */}
+      <section className="container mx-auto px-4 py-16 md:py-20 reveal">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>
-            <p className="text-primary text-sm font-bold uppercase tracking-[0.3em] mb-2">Lo más popular</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Más Vendidos</h2>
-            <p className="text-gray-500 mt-2">Los arreglos favoritos de nuestra comunidad.</p>
+            <p className="text-primary text-xs md:text-sm font-bold uppercase tracking-[0.3em] mb-2">Descubre y Compra</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Arreglos Destacados</h2>
+            <p className="text-gray-500 mt-1 text-sm md:text-base">Selecciona tu categoría favorita para explorar.</p>
           </div>
-          <a
-            href="/catalogo"
-            className="hidden md:flex items-center gap-2 text-primary font-bold border border-primary/20 bg-primary/5 hover:bg-primary hover:text-white px-5 py-2.5 rounded-full transition-all duration-300 text-sm"
-          >
-            Ver todo el catálogo <ArrowRight className="w-4 h-4" />
-          </a>
+
+          {/* Filter Tabs */}
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            {[
+              { id: 'todos', label: 'Todos' },
+              { id: 'hoy', label: '⚡ Entrega Hoy' },
+              { id: 'rosas', label: '🌹 Rosas' },
+              { id: 'ramos', label: '💐 Ramos' },
+              { id: 'regalos', label: '🎁 Regalos' },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-2 rounded-full font-bold text-xs md:text-sm whitespace-nowrap transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-primary text-white shadow-md shadow-primary/30'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {bestSellers.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <div className="text-5xl mb-4">🌿</div>
-            <p>Cargando productos...</p>
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-16 text-gray-400 bg-white rounded-3xl border border-gray-100">
+            <div className="text-4xl mb-3">🌿</div>
+            <p className="font-semibold text-gray-600">No encontramos productos en esta categoría por ahora.</p>
+            <a href="/catalogo" className="mt-4 inline-block text-primary font-bold text-sm hover:underline">Ver catálogo completo</a>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {bestSellers.map(item => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
+            {filteredProducts.map(item => (
               <ProductCard
                 key={item.id}
                 item={item}
@@ -555,9 +631,12 @@ export default function HomePage() {
           </div>
         )}
 
-        <div className="mt-10 text-center md:hidden">
-          <a href="/catalogo" className="inline-flex items-center gap-2 bg-primary text-white font-bold px-8 py-4 rounded-full shadow-lg shadow-primary/30">
-            Ver todo el catálogo <ArrowRight className="w-4 h-4" />
+        <div className="mt-10 text-center">
+          <a
+            href="/catalogo"
+            className="inline-flex items-center gap-2 bg-gray-900 text-white hover:bg-primary font-bold px-8 py-4 rounded-full shadow-lg transition-all hover:scale-105 active:scale-95 text-sm md:text-base"
+          >
+            Explorar Todo el Catálogo <ArrowRight className="w-4 h-4" />
           </a>
         </div>
       </section>
@@ -573,8 +652,8 @@ export default function HomePage() {
       {/* Newsletter */}
       <NewsletterBanner />
 
-      {/* Espacio inferior */}
-      <div className="pb-8" />
+      {/* Espacio inferior para MobileNav */}
+      <div className="pb-16 md:pb-8" />
     </div>
   );
 }

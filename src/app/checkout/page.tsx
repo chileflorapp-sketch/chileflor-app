@@ -133,14 +133,46 @@ export default function CheckoutPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       
-      // Guardar el pedido
-      if (user) {
-        await supabase.from('pedidos').insert([{ ...payload, user_id: user.id }]);
-      } else {
-        await supabase.from('pedidos').insert([payload]);
+      // 1. Guardar el pedido en Supabase / Base de datos
+      try {
+        if (user) {
+          await supabase.from('pedidos').insert([{ ...payload, user_id: user.id }]);
+        } else {
+          await supabase.from('pedidos').insert([payload]);
+        }
+      } catch (dbErr) {
+        console.warn('Warning al guardar pedido en DB:', dbErr);
       }
 
-      // Flujo por WhatsApp para TODOS los métodos de pago (incluyendo Mercado Pago)
+      // 2. Si eligió Mercado Pago, intentar la pasarela oficial online
+      if (selectedPaymentMethod === 'mercadopago') {
+        try {
+          const mpRes = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              items: items,
+              orderId: orderId,
+              envio: deliveryFee + nightSurcharge + cashSurcharge - pointsDiscount
+            })
+          });
+
+          const mpData = await mpRes.json();
+
+          if (mpRes.ok && mpData.url) {
+            clearCart();
+            window.location.href = mpData.url; // Redirigir a la pasarela de Mercado Pago
+            return;
+          } else {
+            console.warn('Mercado Pago Error:', mpData);
+            alert(`⚠️ Mercado Pago: ${mpData.error || 'No se pudo generar el link de pago online'}.\n\nSerás redirigido a WhatsApp para coordinar el pago directamente con nuestro equipo.`);
+          }
+        } catch (mpErr) {
+          console.error('Error de red al conectar con Mercado Pago:', mpErr);
+        }
+      }
+
+      // 3. Flujo por WhatsApp (para Transferencia, Efectivo o Fallback de Mercado Pago)
       const paymentNames: Record<string, string> = {
         transbank: 'Transbank / Red Compra',
         mercadopago: 'Mercado Pago',

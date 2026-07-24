@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import crypto from 'crypto';
 
 export async function POST(req: Request) {
   try {
-    const { image, orderId } = await req.json();
+    const { image, message, orderId } = await req.json();
 
     if (!image || !orderId) {
       return NextResponse.json({ error: 'Missing image or orderId' }, { status: 400 });
@@ -19,12 +19,12 @@ export async function POST(req: Request) {
     const type = matches[1];
     const buffer = Buffer.from(matches[2], 'base64');
     
-    // Generate unique ID (6 chars for URL)
+    // Generate unique ID (7 chars for short URL)
     const uniqueId = crypto.randomBytes(4).toString('hex').slice(0, 7);
     const fileName = `${uniqueId}.jpg`;
 
     // 1. Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase
+    const { error: uploadError } = await supabaseAdmin
       .storage
       .from('tarjetas_temporales')
       .upload(fileName, buffer, {
@@ -39,24 +39,27 @@ export async function POST(req: Request) {
     }
 
     // 2. Get Public URL
-    const { data: { publicUrl } } = supabase
+    const { data: { publicUrl } } = supabaseAdmin
       .storage
       .from('tarjetas_temporales')
       .getPublicUrl(fileName);
 
     // 3. Insert into database
-    const { error: dbError } = await supabase
+    const { error: dbError } = await supabaseAdmin
       .from('tarjetas')
       .insert({
         id: uniqueId,
         image_url: publicUrl,
+        message: message || null,
         order_id: orderId,
-        agradecimiento: false
+        agradecimiento: false,
+        agradecido_at: null
       });
 
     if (dbError) {
       console.error('DB Error:', dbError);
-      // Even if DB fails, maybe return the URL? Better to fail safely.
+      // Cleanup the uploaded image if DB insert fails
+      await supabaseAdmin.storage.from('tarjetas_temporales').remove([fileName]);
       return NextResponse.json({ error: 'Failed to save to database' }, { status: 500 });
     }
 

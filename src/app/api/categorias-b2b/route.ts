@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { B2B_CATEGORIAS } from '@/data/catalog-b2b';
 
 const DB_FILE = path.join(process.cwd(), 'data', 'categorias_b2b.json');
 
 async function readDB() {
   try {
-    const data = await fs.readFile(DB_FILE, 'utf-8');
-    return JSON.parse(data);
+    const fileContent = await fs.readFile(DB_FILE, 'utf-8');
+    const data = JSON.parse(fileContent);
+    if (Array.isArray(data) && data.length > 0) {
+      return data;
+    }
+    return B2B_CATEGORIAS;
   } catch (error) {
-    return [];
+    return B2B_CATEGORIAS;
   }
 }
 
@@ -24,7 +29,7 @@ export async function GET() {
     return NextResponse.json(data);
   } catch (error) {
     console.error('GET Categorias B2B Error:', error);
-    return NextResponse.json({ error: 'Failed to read data' }, { status: 500 });
+    return NextResponse.json(B2B_CATEGORIAS);
   }
 }
 
@@ -56,7 +61,7 @@ export async function DELETE(request: Request) {
     }
 
     let data = await readDB();
-    data = data.filter((c: any) => c.id !== id);
+    data = data.filter((c: any) => c.id !== String(id) && c.nombre !== id);
     await writeDB(data);
 
     return NextResponse.json({ success: true });

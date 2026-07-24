@@ -6,29 +6,53 @@ import { useRouter } from 'next/navigation';
 export default function ScannerQR() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [error, setError] = useState('');
   const [scanning, setScanning] = useState(true);
   const [scanSuccess, setScanSuccess] = useState(false);
+  const [detectedUrl, setDetectedUrl] = useState('');
   const router = useRouter();
 
   useEffect(() => {
+    let isActive = true;
     let animationFrameId: number;
 
     const startCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          } 
+        });
+
+        if (!isActive) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
+        // Stop any existing stream
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+        }
+
+        streamRef.current = stream;
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.play();
-          requestAnimationFrame(tick);
+          animationFrameId = requestAnimationFrame(tick);
         }
       } catch (err) {
-        setError('No se pudo acceder a la cámara. Revisa los permisos.');
+        if (isActive) {
+          setError('No se pudo acceder a la cámara. Revisa los permisos.');
+        }
       }
     };
 
     const tick = () => {
-      if (!scanning) return;
+      if (!isActive) return;
       
       const video = videoRef.current;
       const canvas = canvasRef.current;
@@ -46,18 +70,42 @@ export default function ScannerQR() {
             inversionAttempts: 'dontInvert',
           });
           
-          if (code) {
-            console.log('Found QR code', code.data);
-            setScanning(false);
-            setScanSuccess(true);
+          if (code && code.data) {
+            const qrData = code.data;
             
-            // Vibrar si es posible para dar feedback táctil
-            if (navigator.vibrate) navigator.vibrate(200);
+            // Validate: Only navigate if it's a Chileflor tarjeta link
+            const isValidTarjetaUrl = qrData.includes('/t/');
+            
+            if (isValidTarjetaUrl) {
+              setScanning(false);
+              setScanSuccess(true);
+              
+              // Extract the path: get everything from /t/ onwards
+              let targetPath: string;
+              try {
+                const url = new URL(qrData);
+                targetPath = url.pathname; // e.g., /t/abc1234
+              } catch {
+                // If it's not a full URL, use it as-is
+                targetPath = qrData;
+              }
+              
+              setDetectedUrl(targetPath);
+              
+              // Vibrate for haptic feedback
+              if (navigator.vibrate) navigator.vibrate(200);
 
-            setTimeout(() => {
-              router.push('/muro/mock-hash-123');
-            }, 2000);
-            return;
+              // Stop camera
+              if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+                streamRef.current = null;
+              }
+
+              setTimeout(() => {
+                router.push(targetPath);
+              }, 2000);
+              return;
+            }
           }
         }
       }
@@ -67,26 +115,35 @@ export default function ScannerQR() {
     startCamera();
 
     return () => {
-      setScanning(false);
+      isActive = false;
       cancelAnimationFrame(animationFrameId);
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
       }
     };
-  }, [router, scanning]);
+  }, [router]);
+
+  const handleClose = () => {
+    // Stop camera before navigating
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    router.back();
+  };
 
   return (
     <div className="fixed inset-0 bg-black z-[100] flex flex-col">
       <div className="relative flex-1 flex flex-col items-center justify-center overflow-hidden">
         
         {/* Visor de Cámara */}
-        <video ref={videoRef} className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${scanSuccess ? 'blur-md scale-110 opacity-40' : 'opacity-80'}`} playsInline></video>
+        <video ref={videoRef} className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${scanSuccess ? 'blur-md scale-110 opacity-40' : 'opacity-80'}`} playsInline muted></video>
         <canvas ref={canvasRef} className="hidden"></canvas>
         
         {/* UI Overlay superior */}
         <div className={`absolute top-0 left-0 right-0 p-6 flex justify-between items-center bg-gradient-to-b from-black/70 to-transparent transition-opacity duration-500 ${scanSuccess ? 'opacity-0' : 'opacity-100'}`}>
-          <button onClick={() => router.back()} className="text-white bg-white/20 w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md">
+          <button onClick={handleClose} className="text-white bg-white/20 w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md">
             ✕
           </button>
           <span className="text-white font-medium tracking-widest uppercase">Escanear</span>

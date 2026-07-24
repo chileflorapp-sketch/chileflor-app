@@ -29,6 +29,13 @@ export const metadata: Metadata = {
   title: 'Chileflor - Venta de Flores y Arreglos',
   description: 'Plataforma integral de venta de flores, arreglos florales, mantención de cementerios y dedicatorias emocionales.',
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/icon.png', type: 'image/png' },
+      { url: '/favicon.ico' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({

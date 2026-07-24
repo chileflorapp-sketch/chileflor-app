@@ -1,16 +1,23 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { CATALOGO_B2B } from '@/data/catalog-b2b';
 
 const DB_FILE = path.join(process.cwd(), 'data', 'productos_b2b.json');
 
 async function readDB() {
   try {
-    const data = await fs.readFile(DB_FILE, 'utf-8');
-    return JSON.parse(data);
+    const fileContent = await fs.readFile(DB_FILE, 'utf-8');
+    const data = JSON.parse(fileContent);
+    if (Array.isArray(data) && data.length > 0) {
+      // Merge with initial defaults if custom array is small
+      const existingIds = new Set(data.map((p: any) => p.id));
+      const defaultsToAdd = CATALOGO_B2B.filter(p => !existingIds.has(p.id));
+      return [...data, ...defaultsToAdd];
+    }
+    return CATALOGO_B2B;
   } catch (error) {
-    // Si no existe, retorna array vacío
-    return [];
+    return CATALOGO_B2B;
   }
 }
 
@@ -25,7 +32,7 @@ export async function GET() {
     return NextResponse.json(data);
   } catch (error) {
     console.error('GET Productos B2B Error:', error);
-    return NextResponse.json({ error: 'Failed to read data' }, { status: 500 });
+    return NextResponse.json(CATALOGO_B2B);
   }
 }
 

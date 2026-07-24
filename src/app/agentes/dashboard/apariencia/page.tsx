@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Save, Loader2, LayoutTemplate, Type, Image as ImageIcon, CreditCard, Wand2, X, Sparkles, UploadCloud, Users } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 
 export default function AparienciaPage() {
+  const supabase = createClient();
   const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

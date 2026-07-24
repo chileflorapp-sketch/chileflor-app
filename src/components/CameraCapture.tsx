@@ -14,38 +14,67 @@ export default function CameraCapture({ onCapture, onCancel }: CameraCaptureProp
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
 
-  const startCamera = useCallback(async () => {
-    try {
-      setErrorMsg(null);
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }, // Prefers back camera on mobile
-        audio: false,
-      });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
+  const streamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const initCamera = async () => {
+      try {
+        setErrorMsg(null);
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false,
+        });
+
+        if (!isActive) {
+          // Component unmounted while waiting for user permission/camera
+          mediaStream.getTracks().forEach(track => track.stop());
+          return;
+        }
+
+        // Stop any existing stream just in case
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+        }
+
+        streamRef.current = mediaStream;
+        setStream(mediaStream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+      } catch (err: any) {
+        console.error('Error accessing camera:', err);
+        if (isActive) {
+          setErrorMsg(
+            'No se pudo acceder a la cámara. Por favor, asegúrate de haber dado los permisos necesarios al navegador.'
+          );
+        }
       }
-    } catch (err: any) {
-      console.error('Error accessing camera:', err);
-      setErrorMsg(
-        'No se pudo acceder a la cámara. Por favor, asegúrate de haber dado los permisos necesarios al navegador.'
-      );
-    }
+    };
+
+    initCamera();
+
+    return () => {
+      isActive = false;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+    };
   }, []);
 
   const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
       setStream(null);
     }
-  }, [stream]);
-
-  useEffect(() => {
-    startCamera();
-    return () => {
-      stopCamera();
-    };
-  }, [startCamera, stopCamera]); 
+  }, []);
 
   const handleCapture = () => {
     if (!videoRef.current || !canvasRef.current) return;
