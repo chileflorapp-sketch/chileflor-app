@@ -19,7 +19,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { id, estado, badge, nombre, precio_base, imagen, descripcion, categoria, subcategoria, cross_sell } = await request.json();
+    const { id, estado, badge, nombre, precio_base, imagen, descripcion, categoria, subcategoria, cross_sell, colores, galeria } = await request.json();
 
     const updates: any = {};
     if (estado !== undefined) updates.estado = estado;
@@ -31,6 +31,15 @@ export async function POST(request: Request) {
     if (categoria) updates.categoria = categoria;
     if (subcategoria) updates.subcategoria = subcategoria;
     if (cross_sell !== undefined) updates.cross_sell = cross_sell;
+
+    if (colores !== undefined || galeria !== undefined) {
+      const { data: currentProduct } = await supabase.from('productos').select('tags_visuales').eq('id', id).single();
+      updates.tags_visuales = {
+        ...(currentProduct?.tags_visuales || { fondo: "neutro", angulo: "frontal", luz: "estudio" })
+      };
+      if (colores !== undefined) updates.tags_visuales.colores = colores;
+      if (galeria !== undefined) updates.tags_visuales.galeria = galeria;
+    }
 
     const { data, error } = await supabase
       .from('productos')
@@ -61,6 +70,16 @@ export async function PUT(request: Request) {
     if (!newProduct.ventas) newProduct.ventas = 0;
     if (!newProduct.tags_visuales) newProduct.tags_visuales = { fondo: "neutro", angulo: "frontal", luz: "estudio" };
     if (!newProduct.estado) newProduct.estado = 'activo';
+
+    // Mover colores y galeria a tags_visuales si viene en el payload
+    if (newProduct.colores !== undefined) {
+      newProduct.tags_visuales.colores = newProduct.colores;
+      delete newProduct.colores;
+    }
+    if (newProduct.galeria !== undefined) {
+      newProduct.tags_visuales.galeria = newProduct.galeria;
+      delete newProduct.galeria;
+    }
 
     const { data, error } = await supabase
       .from('productos')

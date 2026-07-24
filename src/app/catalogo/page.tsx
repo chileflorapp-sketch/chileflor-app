@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { CATEGORIAS } from '@/data/catalog';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
-import { Heart } from 'lucide-react';
+import { Heart, Search } from 'lucide-react';
 
 function CatalogoContent() {
   const router = useRouter();
@@ -97,7 +97,7 @@ function CatalogoContent() {
 
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-grow">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
               placeholder="Ej: rosas, novia, premium..."

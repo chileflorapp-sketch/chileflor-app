@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAgentAuth } from '@/context/AgentAuthContext';
+import { Search } from 'lucide-react';
 
 export default function ClientesManagement() {
   const { agent } = useAgentAuth();
@@ -42,9 +43,23 @@ export default function ClientesManagement() {
 
   const loadData = async () => {
     try {
-      const resVip = await fetch('/api/clientes-vip');
+      const resVip = await fetch('/api/agentes/clientes');
       const dataVip = await resVip.json();
-      setClients(dataVip);
+      
+      const mappedClients = dataVip.map((c: any) => {
+        const puntos = Math.floor(c.totalGastado / 1000);
+        let nivel = 'Semilla';
+        if (puntos >= 1000) nivel = 'Brote';
+        if (puntos >= 5000) nivel = 'Flor VIP';
+        
+        return {
+          ...c,
+          puntos,
+          nivel,
+          compras: c.frecuencia,
+        };
+      });
+      setClients(mappedClients);
 
       const resTumbas = await fetch('/api/suscripciones-tumbas');
       const dataTumbas = await resTumbas.json();
@@ -60,50 +75,12 @@ export default function ClientesManagement() {
 
   // --- Funciones VIP ---
   const handleAdjustPoints = async (type: 'add' | 'subtract') => {
-    if (!selectedClient) return;
-    
-    const amount = Math.abs(parseInt(puntosToAdjust) || 0);
-    if (amount === 0) {
-      showToast('Ingresa un monto válido');
-      return;
-    }
-    
-    const finalPoints = selectedClient.puntos + (type === 'add' ? amount : -amount);
-
-    try {
-      const res = await fetch('/api/clientes-vip', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: selectedClient.id, puntos: finalPoints })
-      });
-      if (res.ok) {
-        showToast(`Puntos actualizados para ${selectedClient.nombre}`);
-        setSelectedClient(null);
-        setPuntosToAdjust('');
-        loadData();
-      }
-    } catch (e) {
-      showToast('Error al ajustar puntos');
-    }
+    showToast('El ajuste manual de puntos está deshabilitado. Los puntos se calculan por compras ($1.000 = 1 pt).');
   };
 
   const handleAddVip = async () => {
-    if (!newVipData.nombre || !newVipData.correo) return;
-    try {
-      const res = await fetch('/api/clientes-vip', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newVipData)
-      });
-      if (res.ok) {
-        showToast('Cliente VIP agregado correctamente');
-        setShowAddVip(false);
-        setNewVipData({ nombre: '', correo: '' });
-        loadData();
-      }
-    } catch (e) {
-      showToast('Error al agregar cliente');
-    }
+    showToast('Los clientes se agregan automáticamente al realizar compras.');
+    setShowAddVip(false);
   };
 
   // --- Funciones Tumbas ---
@@ -161,21 +138,32 @@ export default function ClientesManagement() {
 
       <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Club Chileflor & Servicios</h1>
-          <p className="text-gray-400">Gestión de fidelidad y suscripciones de mantenimiento.</p>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-widest mb-3">
+            👑 Fidelización y Mantención
+          </div>
+          <h1 className="text-3xl font-black text-white tracking-tight mb-2">Club Chileflor VIP & Servicios</h1>
+          <p className="text-gray-400 text-sm">Gestión de puntos de clientes destacados y suscripciones de cuidado de tumbas.</p>
         </div>
-        <div className="flex gap-4 items-center bg-[#1C1C1E] p-2 rounded-xl border border-gray-800">
+        <div className="flex gap-2 p-1.5 rounded-2xl bg-[#111116] border border-white/5 backdrop-blur-md">
           <button 
             onClick={() => setActiveTab('vip')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'vip' ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'}`}
+            className={`px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all ${
+              activeTab === 'vip' 
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black shadow-lg shadow-amber-500/25' 
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
           >
-            Club VIP
+            💎 Club VIP
           </button>
           <button 
             onClick={() => setActiveTab('tumbas')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'tumbas' ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'}`}
+            className={`px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all ${
+              activeTab === 'tumbas' 
+                ? 'bg-gradient-to-r from-fuchsia-600 to-rose-600 text-white shadow-lg shadow-fuchsia-600/25' 
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
           >
-            Cuidado de Tumbas
+            🌸 Cuidado de Tumbas
           </button>
         </div>
       </header>
@@ -184,80 +172,94 @@ export default function ClientesManagement() {
       {activeTab === 'vip' && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/5 border border-yellow-500/20 p-6 rounded-3xl">
-              <p className="text-xs text-yellow-500/80 uppercase tracking-widest mb-2 font-bold">Nivel: Flor VIP</p>
-              <div className="text-3xl font-bold text-yellow-500 mb-1">{clients.filter(c => c.nivel === 'Flor VIP').length}</div>
-              <p className="text-sm text-yellow-500/60">Miembros activos</p>
+            <div className="bg-gradient-to-br from-amber-500/15 via-amber-600/5 to-transparent border border-amber-500/20 p-6 rounded-3xl backdrop-blur-md relative overflow-hidden group">
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-amber-500/10 rounded-full blur-xl group-hover:scale-125 transition-transform" />
+              <p className="text-xs text-amber-400 uppercase tracking-widest mb-2 font-extrabold flex items-center gap-1.5">
+                <span>👑</span> Nivel: Flor VIP
+              </p>
+              <div className="text-4xl font-black text-amber-400 mb-1">{clients.filter(c => c.nivel === 'Flor VIP').length}</div>
+              <p className="text-xs text-amber-400/60 font-medium">Miembros de máximo nivel (5.000+ pts)</p>
             </div>
-            <div className="bg-gradient-to-br from-green-500/20 to-green-600/5 border border-green-500/20 p-6 rounded-3xl">
-              <p className="text-xs text-green-500/80 uppercase tracking-widest mb-2 font-bold">Nivel: Brote</p>
-              <div className="text-3xl font-bold text-green-500 mb-1">{clients.filter(c => c.nivel === 'Brote').length}</div>
-              <p className="text-sm text-green-500/60">Miembros activos</p>
+
+            <div className="bg-gradient-to-br from-emerald-500/15 via-emerald-600/5 to-transparent border border-emerald-500/20 p-6 rounded-3xl backdrop-blur-md relative overflow-hidden group">
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:scale-125 transition-transform" />
+              <p className="text-xs text-emerald-400 uppercase tracking-widest mb-2 font-extrabold flex items-center gap-1.5">
+                <span>🌿</span> Nivel: Brote
+              </p>
+              <div className="text-4xl font-black text-emerald-400 mb-1">{clients.filter(c => c.nivel === 'Brote').length}</div>
+              <p className="text-xs text-emerald-400/60 font-medium">Miembros frecuentes (1.000 - 4.999 pts)</p>
             </div>
-            <div className="bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 p-6 rounded-3xl">
-              <p className="text-xs text-primary/80 uppercase tracking-widest mb-2 font-bold">Nivel: Semilla</p>
-              <div className="text-3xl font-bold text-primary mb-1">{clients.filter(c => c.nivel === 'Semilla').length}</div>
-              <p className="text-sm text-primary/60">Miembros activos</p>
+
+            <div className="bg-gradient-to-br from-fuchsia-500/15 via-fuchsia-600/5 to-transparent border border-fuchsia-500/20 p-6 rounded-3xl backdrop-blur-md relative overflow-hidden group">
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-fuchsia-500/10 rounded-full blur-xl group-hover:scale-125 transition-transform" />
+              <p className="text-xs text-fuchsia-400 uppercase tracking-widest mb-2 font-extrabold flex items-center gap-1.5">
+                <span>🌱</span> Nivel: Semilla
+              </p>
+              <div className="text-4xl font-black text-fuchsia-400 mb-1">{clients.filter(c => c.nivel === 'Semilla').length}</div>
+              <p className="text-xs text-fuchsia-400/60 font-medium">Nuevos clientes registrados</p>
             </div>
           </div>
 
-          <div className="bg-[#1C1C1E] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#111111]">
-              <h2 className="font-bold text-white">Directorio de Miembros VIP</h2>
-              <div className="flex gap-4 w-full md:w-auto">
-                <div className="relative flex-1 md:w-64">
-                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">🔍</span>
-                   <input type="text" placeholder="Buscar..." className="w-full bg-[#1C1C1E] border border-gray-800 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:border-primary outline-none transition-colors" />
+          <div className="bg-[#111116]/90 border border-white/5 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md">
+            <div className="p-6 border-b border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/[0.02]">
+              <div>
+                <h2 className="font-extrabold text-white text-lg">Directorio de Miembros VIP</h2>
+                <p className="text-xs text-gray-500">Calculado automáticamente ($1.000 = 1 punto VIP)</p>
+              </div>
+              <div className="flex gap-3 w-full md:w-auto">
+                 <div className="relative flex-1 md:w-64">
+                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                   <input type="text" placeholder="Buscar por cliente o teléfono..." className="w-full bg-[#181820] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder:text-gray-500 focus:border-fuchsia-500 outline-none transition-all" />
                 </div>
-                <button onClick={() => setShowAddVip(true)} className="bg-primary text-white font-bold px-4 py-2 rounded-lg text-sm hover:bg-primary-dark transition-colors">
+                <button onClick={() => setShowAddVip(true)} className="bg-gradient-to-r from-fuchsia-600 to-rose-600 hover:from-fuchsia-500 hover:to-rose-500 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-fuchsia-600/20 whitespace-nowrap">
                   + Nuevo VIP
                 </button>
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-gray-400 min-w-[600px]">
-                <thead className="bg-[#111111] text-xs uppercase text-gray-500">
+              <table className="w-full text-left text-xs text-gray-400 min-w-[600px]">
+                <thead className="bg-[#0D0D11] text-[10px] uppercase text-gray-500 border-b border-white/5">
                   <tr>
-                    <th className="px-6 py-4 font-bold tracking-widest">Cliente</th>
-                    <th className="px-6 py-4 font-bold tracking-widest">Nivel Actual</th>
-                    <th className="px-6 py-4 font-bold tracking-widest">Puntos</th>
-                    <th className="px-6 py-4 font-bold tracking-widest">Historial Compras</th>
-                    <th className="px-6 py-4 text-right font-bold tracking-widest">Acción</th>
+                    <th className="px-6 py-4 font-extrabold tracking-widest">Cliente</th>
+                    <th className="px-6 py-4 font-extrabold tracking-widest">Nivel Actual</th>
+                    <th className="px-6 py-4 font-extrabold tracking-widest">Puntos Acumulados</th>
+                    <th className="px-6 py-4 font-extrabold tracking-widest">LTV (Total Gastado)</th>
+                    <th className="px-6 py-4 text-right font-extrabold tracking-widest">Acción</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800">
+                <tbody className="divide-y divide-white/5">
                   {clients.map(cli => (
-                    <tr key={cli.id} className="hover:bg-[#151515] transition-colors">
+                    <tr key={cli.id} className="hover:bg-white/[0.03] transition-colors">
                       <td className="px-6 py-4">
-                        <div className="font-bold text-white">{cli.nombre}</div>
-                        <div className="text-xs mt-1">{cli.correo}</div>
+                        <div className="font-bold text-white text-sm">{cli.nombre || 'Cliente Anónimo'}</div>
+                        <div className="text-[11px] mt-0.5 text-gray-500 flex items-center gap-1">
+                          <span>📞</span> {cli.telefono || cli.id}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
-                          cli.nivel === 'Flor VIP' ? 'bg-yellow-500/20 text-yellow-500' :
-                          cli.nivel === 'Brote' ? 'bg-green-500/20 text-green-500' :
-                          'bg-primary/20 text-primary'
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                          cli.nivel === 'Flor VIP' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                          cli.nivel === 'Brote' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
+                          'bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30'
                         }`}>
-                          {cli.nivel}
+                          {cli.nivel === 'Flor VIP' ? '👑 Flor VIP' : cli.nivel === 'Brote' ? '🌿 Brote' : '🌱 Semilla'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 font-mono font-bold text-white">
+                      <td className="px-6 py-4 font-mono font-bold text-white text-sm">
                         {cli.puntos.toLocaleString('es-CL')} pts
+                        <div className="text-[10px] text-gray-500 font-sans mt-0.5">{cli.compras || 0} compras realizadas</div>
                       </td>
                       <td className="px-6 py-4">
-                        {cli.compras || 0} pedidos
+                        <div className="text-emerald-400 font-extrabold text-sm">${(cli.totalGastado || 0).toLocaleString('es-CL')}</div>
+                        <div className="text-[10px] text-gray-500 mt-0.5">Última compra hace {cli.diasDesdeUltimoPedido} días</div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {canAdjustPoints ? (
-                          <button 
-                            onClick={() => setSelectedClient(cli)}
-                            className="text-primary hover:text-white bg-primary/10 hover:bg-primary border border-primary/20 px-3 py-1.5 rounded-lg transition-colors font-bold text-xs"
-                          >
-                            Ajustar Puntos
-                          </button>
-                        ) : (
-                          <span className="text-gray-600 text-xs font-bold" title="Permiso denegado">🔒 Bloqueado</span>
-                        )}
+                        <button 
+                          onClick={() => setSelectedClient(cli)}
+                          className="text-fuchsia-400 hover:text-white bg-fuchsia-500/10 hover:bg-fuchsia-600 border border-fuchsia-500/20 px-3.5 py-1.5 rounded-xl transition-all font-bold text-xs shadow-sm"
+                        >
+                          Ver Historial
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -332,23 +334,27 @@ export default function ClientesManagement() {
         </div>
       )}
 
-      {/* Modal Ajustar Puntos VIP */}
+      {/* Modal Historial de Compras */}
       {selectedClient && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedClient(null)}></div>
-          <div className="bg-[#1C1C1E] border border-gray-800 rounded-3xl w-full max-w-md relative z-10 p-8 shadow-2xl">
-            <h2 className="text-xl font-bold text-white mb-2">Ajustar Puntos</h2>
-            <p className="text-gray-400 text-sm mb-6">Cliente: <strong className="text-white">{selectedClient.nombre}</strong></p>
+          <div className="bg-[#1C1C1E] border border-gray-800 rounded-3xl w-full max-w-2xl relative z-10 p-8 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
+            <h2 className="text-xl font-bold text-white mb-2">Historial de Compras</h2>
+            <p className="text-gray-400 text-sm mb-6">Cliente: <strong className="text-white">{selectedClient.nombre || selectedClient.id}</strong></p>
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Cantidad de Puntos</label>
-                <input type="number" placeholder="Ej: 500" value={puntosToAdjust} onChange={e => setPuntosToAdjust(e.target.value)} className="w-full bg-[#111111] border border-gray-800 rounded-xl px-4 py-3 text-white font-mono text-lg focus:border-primary outline-none" />
-              </div>
-              <div className="pt-4 grid grid-cols-2 gap-4">
-                <button onClick={() => handleAdjustPoints('subtract')} className="w-full bg-red-500/10 text-red-500 border border-red-500/20 font-bold py-3 rounded-xl hover:bg-red-500 hover:text-white transition-colors">- Restar</button>
-                <button onClick={() => handleAdjustPoints('add')} className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary-dark transition-colors">+ Sumar</button>
-              </div>
+              {selectedClient.pedidos?.map((pedido: any) => (
+                <div key={pedido.id} className="bg-[#111111] border border-gray-800 rounded-xl p-4 flex justify-between items-center">
+                  <div>
+                    <p className="font-bold text-white text-sm">Pedido #{pedido.id.split('-').pop()}</p>
+                    <p className="text-xs text-gray-500 mt-1">{new Date(pedido.created_at).toLocaleDateString('es-CL')} • {pedido.detalles?.items?.length || 1} items</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-green-500 font-bold">${pedido.total.toLocaleString('es-CL')}</p>
+                  </div>
+                </div>
+              ))}
             </div>
+            <button onClick={() => setSelectedClient(null)} className="mt-6 w-full bg-gray-800 text-white font-bold py-3 rounded-xl hover:bg-gray-700 transition-colors">Cerrar Historial</button>
           </div>
         </div>
       )}

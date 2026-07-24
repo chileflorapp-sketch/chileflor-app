@@ -61,7 +61,7 @@ export default function Header() {
         <header className={`fixed z-50 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           scrolled 
             ? 'top-4 w-[95%] md:w-[85%] max-w-6xl bg-white/70 backdrop-blur-2xl border border-white/20 shadow-float py-2 px-6 rounded-full' 
-            : (isHome ? 'top-[36px] w-full bg-gradient-to-b from-black/60 via-black/20 to-transparent py-5 px-4 md:px-8 border-none' : 'top-[36px] w-full bg-white/90 backdrop-blur-xl border-b border-gray-100 py-5 px-4 md:px-8')
+            : (isHome ? 'top-[36px] w-full bg-gradient-to-b from-black/85 via-black/40 to-transparent py-3 px-4 md:px-8 border-none' : 'top-[36px] w-full bg-white/90 backdrop-blur-xl border-b border-gray-100 py-4 px-4 md:px-8')
         }`}>
           <div className={`mx-auto flex items-center justify-between transition-all duration-500 ${scrolled ? 'w-full' : 'container max-w-7xl'}`}>
             
@@ -87,12 +87,9 @@ export default function Header() {
                     : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
                 }`}
                 aria-label="Buscar productos"
-                title="Buscar (Ctrl+K)"
+                title="Buscar productos"
               >
                 <Search className="w-5 h-5" />
-                <span className={`hidden md:block text-xs font-medium border rounded px-1.5 py-0.5 ${isTransparent ? 'border-white/30 text-white/60' : 'border-gray-200 text-gray-400'}`}>
-                  ⌘K
-                </span>
               </button>
 
               {/* Cart Button → opens drawer */}

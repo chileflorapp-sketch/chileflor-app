@@ -138,9 +138,14 @@ const DEFAULT_CONFIG = {
     valores: [
       { icon: "🌱", title: "Frescura Garantizada", desc: "Trabajamos con agricultores locales para asegurar que cada flor llegue en su estado más vibrante." },
       { icon: "🚀", title: "Logística de Precisión", desc: "Una flota dedicada para despachos rápidos y cuidadosos en La Florida, Puente Alto y todo Santiago." },
-      { icon: "❤️", title: "Empatía y Respeto", desc: "Entendemos el valor de cada entrega, ya sea para celebrar la vida o para honrar la memoria en nuestros cementerios." }
     ]
-  }
+  },
+  categorias: [
+    { id: 'flores', name: 'Flores', subcategorias: ['Ramos de Rosas', 'Girasoles', 'Primavera'] },
+    { id: 'regalos', name: 'Regalos', subcategorias: ['Chocolates', 'Globos', 'Peluches'] },
+    { id: 'plantas', name: 'Plantas', subcategorias: ['Interior', 'Exterior'] },
+    { id: 'condolencias', name: 'Condolencias', subcategorias: ['Coronas', 'Cojines', 'Cruces'] }
+  ]
 };
 
 export async function GET() {
@@ -175,6 +180,7 @@ export async function GET() {
         equipo: (Array.isArray(data.data.nosotros?.equipo) && data.data.nosotros.equipo.length > 0) ? data.data.nosotros.equipo : DEFAULT_CONFIG.nosotros.equipo,
         valores: (Array.isArray(data.data.nosotros?.valores) && data.data.nosotros.valores.length > 0) ? data.data.nosotros.valores : DEFAULT_CONFIG.nosotros.valores,
       },
+      categorias: (Array.isArray(data.data.categorias) && data.data.categorias.length > 0) ? data.data.categorias : DEFAULT_CONFIG.categorias,
     };
 
     return NextResponse.json(mergedConfig);

@@ -13,8 +13,10 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [product, setProduct] = useState<any>(null);
+  const [currentImage, setCurrentImage] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const [selectedComplement, setSelectedComplement] = useState<any>(null);
+  const [selectedComplements, setSelectedComplements] = useState<any[]>([]);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [addedToCart, setAddedToCart] = useState(false);
   const [allProducts, setAllProducts] = useState<any[]>([]);
 
@@ -35,6 +37,10 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
         const found = Array.isArray(data) ? data.find((p: any) => p.id === id) : null;
         if (found) {
           setProduct(found);
+          setCurrentImage(found.imagen);
+          if (found.tags_visuales?.colores?.length > 0) {
+            setSelectedColor(found.tags_visuales.colores[0]);
+          }
         } else {
           router.push('/catalogo');
         }
@@ -50,10 +56,19 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
   const handleAddToCart = () => {
     if (!product) return;
-    const total = product.precio_base + (selectedComplement?.price || 0);
+    const complementsTotal = selectedComplements.reduce((sum, c) => sum + c.price, 0);
+    const total = product.precio_base + complementsTotal;
+    const colorSuffix = selectedColor ? ` (${selectedColor})` : '';
+    const compSuffix = selectedComplements.length > 0 ? ` + ${selectedComplements.map(c => c.name).join(' + ')}` : '';
+    
+    // Generar un ID único que combine el producto y el color si existe
+    const cartItemId = selectedColor 
+      ? `${product.id}-${selectedColor}`
+      : parseInt(product.id.replace('p-', '')) || Date.now();
+
     addToCart({
-      id: parseInt(product.id.replace('p-', '')) || Date.now(),
-      name: product.nombre + (selectedComplement ? ` + ${selectedComplement.name}` : ''),
+      id: cartItemId,
+      name: product.nombre + colorSuffix + compSuffix,
       price: total,
       image: product.imagen,
     });
@@ -75,7 +90,12 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
     .filter(p => p.id !== product.id && p.categoria === product.categoria && p.estado !== 'fuera_de_temporada')
     .slice(0, 4);
 
-  const totalPrice = product.precio_base + (selectedComplement?.price || 0);
+  const complementsTotal = selectedComplements.reduce((sum, c) => sum + c.price, 0);
+  const totalPrice = product.precio_base + complementsTotal;
+
+  const productImages = product.tags_visuales?.galeria?.length > 0 
+    ? product.tags_visuales.galeria 
+    : (product.imagen ? [product.imagen] : []);
 
   return (
     <div className="min-h-screen bg-[#FDFBF7]">
@@ -98,7 +118,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
           <div className="space-y-4">
             <div className="aspect-square relative rounded-3xl overflow-hidden shadow-lg bg-gray-50 border border-gray-100">
               <Image
-                src={product.imagen}
+                src={currentImage || product.imagen}
                 alt={product.nombre}
                 fill
                 priority
@@ -133,13 +153,21 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
               </button>
             </div>
             {/* Miniaturas decorativas */}
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-transparent hover:border-primary transition-all cursor-pointer flex-shrink-0 opacity-70 hover:opacity-100 relative">
-                  <Image src={product.imagen} alt={`Vista ${i}`} fill sizes="80px" className="object-cover" />
-                </div>
-              ))}
-            </div>
+            {productImages.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                {productImages.map((img: string, i: number) => (
+                  <div 
+                    key={i} 
+                    onClick={() => setCurrentImage(img)}
+                    className={`w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer flex-shrink-0 relative ${
+                      currentImage === img ? 'border-primary opacity-100' : 'border-transparent opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <Image src={img} alt={`Vista ${i+1}`} fill sizes="80px" className="object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Info */}
@@ -159,9 +187,9 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
             <p className="text-3xl font-black text-gray-900 tracking-tight mb-2">
               ${totalPrice.toLocaleString('es-CL')}
-              {selectedComplement && (
-                <span className="text-base font-normal text-gray-500 ml-2">
-                  (incluye {selectedComplement.name})
+              {selectedComplements.length > 0 && (
+                <span className="text-base font-normal text-gray-500 ml-2 block sm:inline mt-1 sm:mt-0">
+                  (incluye {selectedComplements.map(c => c.name).join(', ')})
                 </span>
               )}
             </p>
@@ -170,16 +198,44 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
               {product.descripcion || `Un arreglo floral espectacular diseñado cuidadosamente por nuestros expertos floristas. Garantizamos frescura absoluta y la más alta calidad en cada tallo para que puedas expresar lo que sientes de la manera más hermosa.`}
             </p>
 
+            {/* Selector de Color */}
+            {product.tags_visuales?.colores && product.tags_visuales.colores.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wider">Opciones de Color</h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.tags_visuales.colores.map((color: string) => (
+                    <button
+                      key={color}
+                      onClick={() => setSelectedColor(color)}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all ${
+                        selectedColor === color 
+                          ? 'border-primary bg-primary/10 text-primary shadow-sm' 
+                          : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {color}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Complementos */}
             <div className="mb-6">
               <h3 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wider">Añade un Complemento (Opcional)</h3>
               <div className="flex gap-3 flex-wrap">
                 {COMPLEMENTS.map((comp, i) => {
-                  const isSelected = selectedComplement?.name === comp.name;
+                  const isSelected = selectedComplements.some(c => c.name === comp.name);
                   return (
                     <button
                       key={i}
-                      onClick={() => setSelectedComplement(isSelected ? null : comp)}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedComplements(prev => prev.filter(c => c.name !== comp.name));
+                        } else {
+                          setSelectedComplements(prev => [...prev, comp]);
+                        }
+                      }}
                       className={`flex flex-col items-center p-3 rounded-2xl border-2 text-center cursor-pointer transition-all w-24 ${
                         isSelected ? 'border-primary bg-primary/5 shadow-md' : 'border-gray-200 hover:border-primary/40 bg-white'
                       }`}

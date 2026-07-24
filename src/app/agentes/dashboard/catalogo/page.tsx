@@ -9,18 +9,30 @@ export default function CatalogoManagement() {
   const [catalogo, setCatalogo] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   
+  const [categories, setCategories] = useState<any[]>([]);
+  const [configData, setConfigData] = useState<any>(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newSubcatName, setNewSubcatName] = useState('');
+  const [selectedCatForSub, setSelectedCatForSub] = useState('');
+  
   // Estados de edición local antes de guardar
   const [editEstado, setEditEstado] = useState<string>('');
   const [editBadge, setEditBadge] = useState<string>('');
   const [editNombre, setEditNombre] = useState<string>('');
   const [editPrecio, setEditPrecio] = useState<number>(0);
   const [editImagen, setEditImagen] = useState<string>('');
+  const [editGaleria, setEditGaleria] = useState<string[]>([]);
   const [editDescripcion, setEditDescripcion] = useState<string>('');
   const [editCategoria, setEditCategoria] = useState<string>('');
   const [editSubcategoria, setEditSubcategoria] = useState<string>('');
   const [editCrossSell, setEditCrossSell] = useState<string>('');
+  const [editColores, setEditColores] = useState<string[]>([]);
+  const [newColorInput, setNewColorInput] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const supabase = createClient();
+  
+  const COLORS = ['Rojas', 'Blancas', 'Rosadas', 'Amarillas', 'Naranjas', 'Moradas'];
   
   const [saveStatus, setSaveStatus] = useState<'idle'|'saving'|'success'|'error'>('idle');
   const [toastMessage, setToastMessage] = useState('');
@@ -41,7 +53,53 @@ export default function CatalogoManagement() {
       .then(res => res.json())
       .then(data => setCatalogo(data))
       .catch(err => console.error(err));
+      
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(data => {
+        setConfigData(data);
+        if (data.categorias) setCategories(data.categorias);
+      })
+      .catch(err => console.error(err));
   }, []);
+
+  const saveCategories = async (newCats: any[]) => {
+    if (!configData) return;
+    const newConfig = { ...configData, categorias: newCats };
+    try {
+      const res = await fetch('/api/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newConfig)
+      });
+      if (res.ok) {
+        setCategories(newCats);
+        setConfigData(newConfig);
+        showToast('Categorías actualizadas correctamente.');
+      }
+    } catch (e) {
+      showToast('Error al guardar categorías.');
+    }
+  };
+
+  const handleAddCategory = () => {
+    if (!newCatName) return;
+    const newCats = [...categories, { id: newCatName.toLowerCase().replace(/\s+/g, '-'), name: newCatName, subcategorias: [] }];
+    saveCategories(newCats);
+    setNewCatName('');
+  };
+
+  const handleAddSubcategory = () => {
+    if (!selectedCatForSub || !newSubcatName) return;
+    const newCats = categories.map(c => {
+      if (c.id === selectedCatForSub) {
+        return { ...c, subcategorias: [...(c.subcategorias || []), newSubcatName] };
+      }
+      return c;
+    });
+    saveCategories(newCats);
+    setNewSubcatName('');
+  };
 
   // Sincronizar editor cuando cambia el producto seleccionado
   useEffect(() => {
@@ -53,10 +111,13 @@ export default function CatalogoManagement() {
         setEditNombre(p.nombre || '');
         setEditPrecio(p.precio_base || 0);
         setEditImagen(p.imagen || '');
+        setEditGaleria(p.tags_visuales?.galeria || (p.imagen ? [p.imagen] : []));
         setEditDescripcion(p.descripcion || '');
         setEditCategoria(p.categoria || '');
         setEditSubcategoria(p.subcategoria || '');
         setEditCrossSell(p.cross_sell ? p.cross_sell.join(', ') : '');
+        setEditColores(p.tags_visuales?.colores || []);
+        setNewColorInput('');
         setSaveStatus('idle');
       } else if (selectedProduct === 'new') {
         setEditEstado('activo');
@@ -64,10 +125,13 @@ export default function CatalogoManagement() {
         setEditNombre('');
         setEditPrecio(0);
         setEditImagen('');
+        setEditGaleria([]);
         setEditDescripcion('');
         setEditCategoria('Flores');
         setEditSubcategoria('');
         setEditCrossSell('');
+        setEditColores([]);
+        setNewColorInput('');
         setSaveStatus('idle');
       }
     }
@@ -90,11 +154,13 @@ export default function CatalogoManagement() {
           badge: editBadge === '' ? null : editBadge,
           nombre: editNombre,
           precio_base: editPrecio,
-          imagen: editImagen,
+          imagen: editGaleria.length > 0 ? editGaleria[0] : '', // sync primary image
+          galeria: editGaleria.length > 0 ? editGaleria : undefined,
           descripcion: editDescripcion,
           categoria: editCategoria,
           subcategoria: editSubcategoria,
-          cross_sell: editCrossSell ? editCrossSell.split(',').map(s => s.trim()).filter(Boolean) : null
+          cross_sell: editCrossSell ? editCrossSell.split(',').map(s => s.trim()).filter(Boolean) : null,
+          colores: editColores.length > 0 ? editColores : undefined
         })
       });
       
@@ -149,7 +215,11 @@ export default function CatalogoManagement() {
       if (uploadError) throw uploadError;
       
       const { data } = supabase.storage.from('productos').getPublicUrl(filePath);
-      setEditImagen(data.publicUrl);
+      setEditGaleria(prev => {
+        const next = [...prev, data.publicUrl];
+        if (next.length === 1) setEditImagen(data.publicUrl);
+        return next;
+      });
     } catch (error) {
       showToast('Error al subir la imagen. Verifica que el Bucket "productos" existe y es público.');
     } finally {
@@ -182,7 +252,7 @@ export default function CatalogoManagement() {
           {canEdit && (
             <>
               <button 
-                onClick={() => alert('Gestor de Categorías en construcción')}
+                onClick={() => setShowCategoryModal(true)}
                 className="bg-gradient-to-r from-fuchsia-600 to-pink-500 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-[0_4px_15px_rgba(236,72,153,0.3)] hover:scale-105 hover:shadow-[0_6px_20px_rgba(236,72,153,0.5)] transition-all active:scale-95 flex items-center gap-2"
               >
                 <span>📂</span> Gestor Categorías
@@ -257,26 +327,31 @@ export default function CatalogoManagement() {
                     <select 
                       disabled={!canEdit} 
                       value={editCategoria}
-                      onChange={e => setEditCategoria(e.target.value)}
+                      onChange={e => {
+                        setEditCategoria(e.target.value);
+                        setEditSubcategoria('');
+                      }}
                       className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-primary outline-none disabled:opacity-50"
                     >
-                      <option value="Flores">Flores</option>
-                      <option value="Plantas">Plantas</option>
-                      <option value="Regalos">Regalos</option>
-                      <option value="Homenajes">Homenajes</option>
-                      <option value="Estacionales">Estacionales</option>
+                      <option value="">Selecciona...</option>
+                      {categories.map((c, idx) => (
+                        <option key={idx} value={c.name}>{c.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Subcategoría</label>
-                    <input 
-                      type="text"
-                      disabled={!canEdit} 
+                    <select 
+                      disabled={!canEdit || !editCategoria} 
                       value={editSubcategoria}
                       onChange={e => setEditSubcategoria(e.target.value)}
-                      placeholder="Ej: Ramos de Novia"
                       className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-primary outline-none disabled:opacity-50"
-                    />
+                    >
+                      <option value="">Selecciona...</option>
+                      {categories.find(c => c.name === editCategoria)?.subcategorias?.map((sub: string, idx: number) => (
+                        <option key={idx} value={sub}>{sub}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -296,22 +371,27 @@ export default function CatalogoManagement() {
                       )}
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">URL Imagen o Subir Foto</label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="text"
-                        disabled={!canEdit} 
-                        value={editImagen}
-                        onChange={e => setEditImagen(e.target.value)}
-                        placeholder="https://..."
-                        className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-primary outline-none disabled:opacity-50"
-                      />
-                      <label className="bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-gray-400 hover:text-white cursor-pointer transition-colors flex items-center justify-center shrink-0">
-                        {isUploading ? '...' : '📁'}
-                        <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={!canEdit || isUploading} />
-                      </label>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Imágenes del Producto (Máx 4)</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {editGaleria.map((img, i) => (
+                        <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-gray-800">
+                          <img src={img} alt={`Img ${i+1}`} className="w-full h-full object-cover" />
+                          <button onClick={() => { if(canEdit) setEditGaleria(prev => prev.filter((_, idx) => idx !== i)) }} className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold opacity-80 hover:opacity-100">✕</button>
+                          {i === 0 && <span className="absolute bottom-0 left-0 right-0 bg-primary/80 text-white text-[9px] font-bold text-center py-0.5">PRINCIPAL</span>}
+                        </div>
+                      ))}
+                      {editGaleria.length < 4 && (
+                        <label className="w-24 h-24 bg-[#1C1C1E] border border-gray-800 rounded-xl flex flex-col items-center justify-center text-gray-400 hover:text-white cursor-pointer transition-colors border-dashed hover:border-gray-500">
+                          {isUploading ? <span className="text-xs">Subiendo...</span> : <>
+                            <span className="text-2xl mb-1">+</span>
+                            <span className="text-[9px] uppercase font-bold">Subir Foto</span>
+                          </>}
+                          <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={!canEdit || isUploading} />
+                        </label>
+                      )}
                     </div>
+                    {editGaleria.length === 0 && <p className="text-[10px] text-red-400 mt-1">Debes subir al menos 1 imagen principal.</p>}
                   </div>
                 </div>
 
@@ -346,6 +426,73 @@ export default function CatalogoManagement() {
                     className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-primary outline-none disabled:opacity-50"
                   />
                   <p className="text-[10px] text-gray-500 mt-1">Escribe los IDs de los productos relacionados que quieres sugerir.</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Opciones de Color (Opcional)</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {COLORS.map(c => {
+                      const isSelected = editColores.includes(c);
+                      return (
+                        <button
+                          key={c}
+                          onClick={() => {
+                            if (!canEdit) return;
+                            if (isSelected) setEditColores(editColores.filter(x => x !== c));
+                            else setEditColores([...editColores, c]);
+                          }}
+                          disabled={!canEdit}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border disabled:opacity-50 ${isSelected ? 'bg-primary border-primary text-white' : 'bg-transparent border-gray-700 text-gray-400 hover:border-gray-500'}`}
+                        >
+                          {c}
+                        </button>
+                      )
+                    })}
+                    {editColores.filter(c => !COLORS.includes(c)).map(c => (
+                      <button
+                        key={c}
+                        onClick={() => {
+                          if (canEdit) setEditColores(editColores.filter(x => x !== c));
+                        }}
+                        disabled={!canEdit}
+                        className="px-3 py-1.5 rounded-full text-xs font-bold transition-all border bg-primary border-primary text-white flex items-center gap-1 disabled:opacity-50"
+                      >
+                        {c} <span className="text-[10px]">✕</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text"
+                      disabled={!canEdit}
+                      value={newColorInput}
+                      onChange={e => setNewColorInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (newColorInput.trim() && !editColores.includes(newColorInput.trim())) {
+                            setEditColores([...editColores, newColorInput.trim()]);
+                            setNewColorInput('');
+                          }
+                        }
+                      }}
+                      placeholder="Añadir otro color (Ej: Azul Marino)"
+                      className="flex-1 bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-2 text-white focus:border-primary outline-none text-sm disabled:opacity-50"
+                    />
+                    <button 
+                      disabled={!canEdit}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (newColorInput.trim() && !editColores.includes(newColorInput.trim())) {
+                          setEditColores([...editColores, newColorInput.trim()]);
+                          setNewColorInput('');
+                        }
+                      }}
+                      className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+                    >
+                      Añadir
+                    </button>
+                  </div>
                 </div>
 
                 <div>
@@ -426,6 +573,89 @@ export default function CatalogoManagement() {
         </div>
 
       </div>
+      {/* Category Manager Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#1C1C1E] border border-gray-800 rounded-3xl p-6 w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white">Gestor de Categorías</h2>
+              <button onClick={() => setShowCategoryModal(false)} className="text-gray-500 hover:text-white transition-colors">✕</button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3">Categorías Madres</h3>
+                <div className="bg-[#111111] rounded-xl border border-gray-800 p-4 h-64 overflow-y-auto mb-3">
+                  {categories.map((c, i) => (
+                    <div key={i} className="flex items-center justify-between py-2 border-b border-gray-800 last:border-0">
+                      <span className="text-white font-medium text-sm">{c.name}</span>
+                      <button onClick={() => {
+                        const newCats = categories.filter(cat => cat.id !== c.id);
+                        saveCategories(newCats);
+                      }} className="text-red-500 hover:text-red-400 text-xs font-bold">Borrar</button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={newCatName}
+                    onChange={e => setNewCatName(e.target.value)}
+                    placeholder="Nueva Categoría..."
+                    className="flex-1 bg-[#111111] border border-gray-800 rounded-xl px-3 py-2 text-white text-sm focus:border-primary outline-none"
+                  />
+                  <button onClick={handleAddCategory} className="bg-primary hover:bg-primary-dark text-white px-3 py-2 rounded-xl text-sm font-bold transition-colors">+</button>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3">Subcategorías</h3>
+                <select 
+                  value={selectedCatForSub}
+                  onChange={e => setSelectedCatForSub(e.target.value)}
+                  className="w-full bg-[#111111] border border-gray-800 rounded-xl px-3 py-2 text-white text-sm focus:border-primary outline-none mb-3"
+                >
+                  <option value="">Selecciona Categoría...</option>
+                  {categories.map((c, i) => <option key={i} value={c.id}>{c.name}</option>)}
+                </select>
+                
+                <div className="bg-[#111111] rounded-xl border border-gray-800 p-4 h-48 overflow-y-auto mb-3">
+                  {selectedCatForSub ? (
+                    categories.find(c => c.id === selectedCatForSub)?.subcategorias?.map((sub: string, i: number) => (
+                      <div key={i} className="flex items-center justify-between py-2 border-b border-gray-800 last:border-0">
+                        <span className="text-gray-300 text-sm">{sub}</span>
+                        <button onClick={() => {
+                          const newCats = categories.map(c => {
+                            if (c.id === selectedCatForSub) {
+                              return { ...c, subcategorias: c.subcategorias.filter((s: string) => s !== sub) };
+                            }
+                            return c;
+                          });
+                          saveCategories(newCats);
+                        }} className="text-red-500 hover:text-red-400 text-[10px] font-bold">X</button>
+                      </div>
+                    ))
+                  ) : <p className="text-gray-600 text-xs text-center mt-10">Selecciona una categoría primero</p>}
+                </div>
+                
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={newSubcatName}
+                    onChange={e => setNewSubcatName(e.target.value)}
+                    placeholder="Nueva Subcategoría..."
+                    disabled={!selectedCatForSub}
+                    className="flex-1 bg-[#111111] border border-gray-800 rounded-xl px-3 py-2 text-white text-sm focus:border-primary outline-none disabled:opacity-50"
+                  />
+                  <button onClick={handleAddSubcategory} disabled={!selectedCatForSub} className="bg-primary hover:bg-primary-dark text-white px-3 py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50">+</button>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

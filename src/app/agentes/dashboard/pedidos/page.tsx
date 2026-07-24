@@ -26,6 +26,17 @@ export default function PedidosManagement() {
 
   useEffect(() => {
     fetchOrders();
+
+    const channel = supabase
+      .channel('public:pedidos')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, payload => {
+         fetchOrders(); 
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   async function fetchOrders() {
@@ -241,27 +252,38 @@ export default function PedidosManagement() {
 
       <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Bandeja de Pedidos</h1>
-          <p className="text-gray-400">Control de flujo, envíos y notificaciones al cliente.</p>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-300 text-xs font-bold uppercase tracking-widest mb-3">
+            📦 Gestión Kanban
+          </div>
+          <h1 className="text-3xl font-black text-white tracking-tight mb-2">Bandeja Operativa de Pedidos</h1>
+          <p className="text-gray-400 text-sm">Control en tiempo real de ordenes, fotos de despacho y comprobantes SII.</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button 
             onClick={() => { setLoading(true); fetchOrders(); }}
-            className="w-10 h-10 flex items-center justify-center rounded-xl border border-gray-800 text-gray-400 hover:text-white hover:border-gray-500 transition-all bg-[#111111]"
+            className="w-11 h-11 flex items-center justify-center rounded-2xl border border-white/10 text-gray-300 hover:text-white hover:border-fuchsia-500/50 hover:bg-white/5 transition-all bg-[#111116]"
             title="Actualizar Pedidos"
           >
             🔄
           </button>
-          <div className="flex bg-[#111111] border border-gray-800 rounded-xl p-1 w-full md:w-auto">
+          <div className="flex bg-[#111116] border border-white/5 rounded-2xl p-1.5 backdrop-blur-md">
             <button 
               onClick={() => setActiveTab('B2C')}
-              className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'B2C' ? 'bg-primary text-white' : 'text-gray-500 hover:text-white'}`}
+              className={`px-5 py-2 rounded-xl text-xs font-extrabold transition-all ${
+                activeTab === 'B2C' 
+                  ? 'bg-gradient-to-r from-fuchsia-600 to-rose-600 text-white shadow-lg shadow-fuchsia-600/20' 
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
             >
               Ventas Web (B2C)
             </button>
             <button 
               onClick={() => setActiveTab('B2B')}
-              className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'B2B' ? 'bg-yellow-500 text-black' : 'text-gray-500 hover:text-white'}`}
+              className={`px-5 py-2 rounded-xl text-xs font-extrabold transition-all ${
+                activeTab === 'B2B' 
+                  ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black shadow-lg shadow-amber-500/20' 
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
             >
               Mayoristas (B2B)
             </button>
@@ -269,52 +291,94 @@ export default function PedidosManagement() {
         </div>
       </header>
 
-      <div className="bg-[#1C1C1E] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl print:shadow-none">
-        <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-[#111111]">
-          <h2 className="font-bold text-white">Órdenes Activas ({filteredOrders.length})</h2>
+      <div className="bg-[#111116]/90 border border-white/5 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md print:shadow-none">
+        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <h2 className="font-extrabold text-white text-base">Órdenes Activas en Sistema ({filteredOrders.length})</h2>
+          </div>
+          <span className="text-xs text-gray-500 font-mono">Actualización automática vía realtime</span>
         </div>
-        <div className="divide-y divide-gray-800 max-h-[60vh] overflow-y-auto">
+        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 bg-[#0B0B0F]/60 overflow-x-auto min-h-[60vh]">
           {loading ? (
-             <div className="p-12 text-center text-gray-500">
-               Cargando pedidos...
-             </div>
+             <div className="col-span-3 p-12 text-center text-gray-500 font-medium">Cargando pedidos...</div>
           ) : filteredOrders.length === 0 ? (
-             <div className="p-12 text-center text-gray-500">
-               No hay pedidos activos en esta categoría.
-             </div>
-          ) : filteredOrders.map(order => (
-            <div key={order.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-[#151515] transition-colors">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <span className="font-mono text-sm text-gray-400">{order.id}</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
-                    order.estado === 'PREPARANDO' ? 'bg-orange-500/20 text-orange-400' :
-                    order.estado === 'EN_RUTA' ? 'bg-blue-500/20 text-blue-400' :
-                    order.estado === 'PENDIENTE_PAGO' ? 'bg-yellow-500/20 text-yellow-400' :
-                    order.estado === 'COMPLETADO' ? 'bg-green-500/20 text-green-400' :
-                    order.estado === 'OK' ? 'bg-green-500 text-white shadow-sm shadow-green-500/30' :
-                    'bg-gray-500/20 text-gray-400'
-                  }`}>
-                    {order.estado === 'OK' ? '✓ OK' : order.estado}
+             <div className="col-span-3 p-12 text-center text-gray-500 font-medium">No hay pedidos activos en esta categoría.</div>
+          ) : (
+            <>
+              {/* Kanban Column: Pendiente */}
+              <div className="bg-[#111116]/80 rounded-2xl p-4 border border-white/5 flex flex-col gap-3 min-w-[280px]">
+                <h3 className="text-amber-400 font-extrabold uppercase tracking-widest text-[11px] border-b border-amber-500/20 pb-3 flex justify-between items-center">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                    Pendiente / Pago
                   </span>
-                </div>
-                <h3 className="font-bold text-white text-lg">{order.cliente}</h3>
-                <p className="text-xs text-gray-500 mt-1">{order.fecha} • {order.direccion}</p>
+                  <span className="bg-amber-500/20 border border-amber-500/30 text-amber-300 px-2.5 py-0.5 rounded-full text-xs font-mono">
+                    {filteredOrders.filter(o => o.estado === 'PENDIENTE_PAGO').length}
+                  </span>
+                </h3>
+                {filteredOrders.filter(o => o.estado === 'PENDIENTE_PAGO').map(order => (
+                  <div key={order.id} onClick={() => handleOpenOrder(order)} className="bg-white/[0.03] p-4 rounded-xl border border-white/5 hover:border-amber-500/50 hover:bg-white/[0.06] cursor-pointer transition-all shadow-md group">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="font-mono text-xs text-gray-400 group-hover:text-amber-400 transition-colors">{order.id}</span>
+                      <span className="text-fuchsia-400 font-extrabold text-sm">${order.total.toLocaleString('es-CL')}</span>
+                    </div>
+                    <h4 className="font-bold text-white text-sm group-hover:text-amber-200 transition-colors">{order.cliente}</h4>
+                    <p className="text-[11px] text-gray-400 mt-1 line-clamp-1">📍 {order.direccion}</p>
+                    <p className="text-[10px] text-gray-500 mt-2 font-mono">🕒 {order.fecha}</p>
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center gap-6">
-                <div className="text-right">
-                  <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Total</p>
-                  <p className="font-bold text-white text-xl">${order.total.toLocaleString('es-CL')}</p>
-                </div>
-                <button 
-                  onClick={() => handleOpenOrder(order)}
-                  className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center hover:bg-primary transition-colors text-white shadow-lg shadow-primary/20"
-                >
-                  👁️
-                </button>
+
+              {/* Kanban Column: Preparando */}
+              <div className="bg-[#111116]/80 rounded-2xl p-4 border border-white/5 flex flex-col gap-3 min-w-[280px]">
+                <h3 className="text-orange-400 font-extrabold uppercase tracking-widest text-[11px] border-b border-orange-500/20 pb-3 flex justify-between items-center">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-orange-400" />
+                    Preparando Ramo
+                  </span>
+                  <span className="bg-orange-500/20 border border-orange-500/30 text-orange-300 px-2.5 py-0.5 rounded-full text-xs font-mono">
+                    {filteredOrders.filter(o => o.estado === 'PREPARANDO').length}
+                  </span>
+                </h3>
+                {filteredOrders.filter(o => o.estado === 'PREPARANDO').map(order => (
+                  <div key={order.id} onClick={() => handleOpenOrder(order)} className="bg-white/[0.03] p-4 rounded-xl border border-white/5 hover:border-orange-500/50 hover:bg-white/[0.06] cursor-pointer transition-all shadow-md group">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="font-mono text-xs text-gray-400 group-hover:text-orange-400 transition-colors">{order.id}</span>
+                      <span className="text-fuchsia-400 font-extrabold text-sm">${order.total.toLocaleString('es-CL')}</span>
+                    </div>
+                    <h4 className="font-bold text-white text-sm group-hover:text-orange-200 transition-colors">{order.cliente}</h4>
+                    <p className="text-[11px] text-gray-400 mt-1 line-clamp-1">📍 {order.direccion}</p>
+                    <p className="text-[10px] text-gray-500 mt-2 font-mono">🕒 {order.fecha}</p>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
+
+              {/* Kanban Column: En Ruta / Entregado */}
+              <div className="bg-[#111116]/80 rounded-2xl p-4 border border-white/5 flex flex-col gap-3 min-w-[280px]">
+                <h3 className="text-emerald-400 font-extrabold uppercase tracking-widest text-[11px] border-b border-emerald-500/20 pb-3 flex justify-between items-center">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    En Ruta / Entregado
+                  </span>
+                  <span className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 px-2.5 py-0.5 rounded-full text-xs font-mono">
+                    {filteredOrders.filter(o => o.estado === 'EN_RUTA' || o.estado === 'COMPLETADO' || o.estado === 'OK').length}
+                  </span>
+                </h3>
+                {filteredOrders.filter(o => o.estado === 'EN_RUTA' || o.estado === 'COMPLETADO' || o.estado === 'OK').map(order => (
+                  <div key={order.id} onClick={() => handleOpenOrder(order)} className="bg-white/[0.03] p-4 rounded-xl border border-white/5 hover:border-emerald-500/50 hover:bg-white/[0.06] cursor-pointer transition-all shadow-md group">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="font-mono text-xs text-gray-400 group-hover:text-emerald-400 transition-colors">{order.id}</span>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider ${order.estado === 'EN_RUTA' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`}>{order.estado}</span>
+                    </div>
+                    <h4 className="font-bold text-white text-sm group-hover:text-emerald-200 transition-colors">{order.cliente}</h4>
+                    <p className="text-[11px] text-gray-400 mt-1 line-clamp-1">📍 {order.direccion}</p>
+                    <p className="text-[10px] text-gray-500 mt-2 font-mono">🕒 {order.fecha}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
