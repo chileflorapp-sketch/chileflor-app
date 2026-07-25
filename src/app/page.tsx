@@ -326,7 +326,7 @@ const APP_SHORTCUTS = [
 
 function QuickAppActions() {
   return (
-    <section className="bg-white py-6 border-b border-gray-100 shadow-sm sticky top-[56px] md:top-[72px] z-40 backdrop-blur-md bg-white/90">
+    <section className="bg-white py-6 border-b border-gray-100 shadow-sm sticky top-[76px] md:top-[88px] z-40 backdrop-blur-md bg-white/90">
       <div className="container mx-auto px-4">
         <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 snap-x">
           {APP_SHORTCUTS.map((item, i) => (
@@ -468,7 +468,7 @@ function UrgencyBar() {
   const pad = (n: number) => String(n).padStart(2, '0');
 
   return (
-    <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-b border-gray-700 py-2.5 px-4 relative z-10">
+    <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 border-b border-gray-700 py-2.5 px-4 relative z-20">
       <div className="container mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 text-white text-sm">
         <div className="flex items-center gap-2">
           <span className="relative flex w-2 h-2">
