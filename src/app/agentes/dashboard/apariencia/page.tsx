@@ -209,6 +209,7 @@ export default function AparienciaPage() {
         <button onClick={() => setActiveTab('info')} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'info' ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'text-gray-500 hover:text-gray-300'}`}><ImageIcon size={18} /> Info Slider</button>
         <button onClick={() => setActiveTab('banners')} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'banners' ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'text-gray-500 hover:text-gray-300'}`}><CreditCard size={18} /> Banners</button>
         <button onClick={() => setActiveTab('nosotros')} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'nosotros' ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'text-gray-500 hover:text-gray-300'}`}><Users size={18} /> Nosotros</button>
+        <button onClick={() => setActiveTab('colecciones')} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'colecciones' ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'text-gray-500 hover:text-gray-300'}`}><LayoutTemplate size={18} /> Colecciones</button>
       </div>
 
       <div className="bg-[#141416] border border-[#1C1C1E] rounded-2xl p-6 md:p-8">
@@ -465,6 +466,87 @@ export default function AparienciaPage() {
           </div>
         )}
 
+        {/* TAB: COLECCIONES */}
+        {activeTab === 'colecciones' && (
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-xl font-bold text-white mb-6">Textos Principales</h3>
+              <div className="grid md:grid-cols-3 gap-6">
+                <div>{renderInput('Título Superior', ['colecciones', 'title'], false, true)}</div>
+                <div>{renderInput('Título Principal', ['colecciones', 'subtitle'], false, true)}</div>
+                <div>{renderInput('Texto Resaltado', ['colecciones', 'subtitleHighlight'], false, true)}</div>
+              </div>
+            </div>
+
+            <hr className="border-gray-800" />
+
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-white">Tarjetas de Colección</h3>
+                <button 
+                  onClick={() => {
+                    const newItems = [...(config?.colecciones?.items || [])];
+                    newItems.push({ emoji: '🌸', name: 'Nueva', sub: 'Subtítulo', link: '/catalogo', color: 'from-gray-900 to-gray-700', img: '' });
+                    updateConfig(['colecciones', 'items'], newItems);
+                  }}
+                  className="bg-fuchsia-500/20 text-fuchsia-400 px-4 py-2 rounded-lg text-sm font-bold hover:bg-fuchsia-500/30 transition-colors"
+                >
+                  + Añadir Tarjeta
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                {(config?.colecciones?.items || []).map((_: any, i: number) => (
+                  <div key={i} className="p-6 bg-[#141416] rounded-xl border border-gray-700 relative group">
+                    <button 
+                      onClick={() => {
+                        if(confirm('¿Eliminar esta tarjeta?')) {
+                          const newItems = [...config.colecciones.items];
+                          newItems.splice(i, 1);
+                          updateConfig(['colecciones', 'items'], newItems);
+                        }
+                      }}
+                      className="absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Eliminar tarjeta"
+                    >
+                      <X size={20} />
+                    </button>
+
+                    <div className="grid md:grid-cols-2 gap-6 mb-4">
+                      <div>{renderInput('Imagen de Fondo', ['colecciones', 'items', i, 'img'], false, false, true)}</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>{renderInput('Emoji', ['colecciones', 'items', i, 'emoji'])}</div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-400 mb-2">Color Gradiente (Tailwind)</label>
+                          <select 
+                            value={config.colecciones?.items?.[i]?.color || ''} 
+                            onChange={(e) => updateConfig(['colecciones', 'items', i, 'color'], e.target.value)}
+                            className="w-full bg-[#1A1A1D] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-fuchsia-500 outline-none"
+                          >
+                            <option value="from-rose-900 to-rose-700">Rojo/Rosa Oscuro</option>
+                            <option value="from-pink-900 to-fuchsia-700">Fucsia Brillante</option>
+                            <option value="from-amber-900 to-orange-700">Naranja/Ámbar</option>
+                            <option value="from-slate-800 to-slate-600">Gris Elegante</option>
+                            <option value="from-emerald-900 to-teal-700">Esmeralda</option>
+                            <option value="from-purple-900 to-violet-700">Púrpura/Violeta</option>
+                            <option value="from-blue-900 to-blue-700">Azul Profundo</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid md:grid-cols-3 gap-6">
+                      <div>{renderInput('Nombre de la Colección', ['colecciones', 'items', i, 'name'])}</div>
+                      <div>{renderInput('Subtítulo Breve', ['colecciones', 'items', i, 'sub'])}</div>
+                      <div>{renderInput('Enlace (ej: /catalogo?cat=Rosas)', ['colecciones', 'items', i, 'link'])}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Bottom Save Button for Convenience */}
         <div className="mt-12 flex justify-end border-t border-gray-800 pt-8">
           <button 
@@ -473,7 +555,7 @@ export default function AparienciaPage() {
             className="flex items-center gap-2 bg-white text-black hover:bg-gray-200 px-8 py-3 rounded-xl font-bold shadow-lg transition-all disabled:opacity-50 hover:-translate-y-1"
           >
             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-            {saving ? 'Guardando...' : 'Guardar Cambios de ' + (activeTab === 'fonts' ? 'Fuentes' : activeTab === 'hero' ? 'Hero' : activeTab === 'info' ? 'Info' : activeTab === 'nosotros' ? 'Nosotros' : 'Banners')}
+            {saving ? 'Guardando...' : 'Guardar Cambios de ' + (activeTab === 'fonts' ? 'Fuentes' : activeTab === 'hero' ? 'Hero' : activeTab === 'info' ? 'Info' : activeTab === 'nosotros' ? 'Nosotros' : activeTab === 'colecciones' ? 'Colecciones' : 'Banners')}
           </button>
         </div>
       </div>

@@ -134,6 +134,19 @@ const DEFAULT_CONFIG = {
       { icon: "🚀", title: "Logística de Precisión", desc: "Una flota dedicada para despachos rápidos y cuidadosos en La Florida, Puente Alto y todo Santiago." },
     ]
   },
+  colecciones: {
+    title: "Nuestras Colecciones",
+    subtitle: "Encuentra el arreglo",
+    subtitleHighlight: "perfecto para ti",
+    items: [
+      { emoji: '🌹', name: 'Rosas', sub: 'Clásicas y de temporada', link: '/catalogo?cat=Flores', color: 'from-rose-900 to-rose-700', img: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80' },
+      { emoji: '💐', name: 'Ramos', sub: 'Para toda ocasión', link: '/catalogo?cat=Ramos de Flores', color: 'from-pink-900 to-fuchsia-700', img: 'https://images.unsplash.com/photo-1490750967868-88df5691cc8b?auto=format&fit=crop&w=800&q=80' },
+      { emoji: '💒', name: 'Matrimonios', sub: 'Decoración nupcial', link: '/catalogo?cat=Matrimonios', color: 'from-amber-900 to-orange-700', img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80' },
+      { emoji: '🕊️', name: 'Homenajes', sub: 'Con amor y respeto', link: '/catalogo?cat=Homenajes', color: 'from-slate-800 to-slate-600', img: 'https://images.unsplash.com/photo-1509841811836-37dd6b1e5de1?auto=format&fit=crop&w=800&q=80' },
+      { emoji: '🎁', name: 'Regalos', sub: 'Sorprende a alguien', link: '/catalogo?cat=Regalos', color: 'from-emerald-900 to-teal-700', img: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=800&q=80' },
+      { emoji: '🌸', name: 'Día Madre', sub: 'Lo mejor para mamá', link: '/catalogo?cat=Día de la Madre', color: 'from-purple-900 to-violet-700', img: 'https://images.unsplash.com/photo-1487530811176-3780de880c2d?auto=format&fit=crop&w=800&q=80' }
+    ]
+  },
   categorias: [
     { id: 'flores', name: 'Flores', subcategorias: ['Ramos de Rosas', 'Girasoles', 'Primavera'] },
     { id: 'regalos', name: 'Regalos', subcategorias: ['Chocolates', 'Globos', 'Peluches'] },
@@ -175,6 +188,11 @@ export async function GET() {
         valores: (Array.isArray(data.data.nosotros?.valores) && data.data.nosotros.valores.length > 0) ? data.data.nosotros.valores : DEFAULT_CONFIG.nosotros.valores,
       },
       categorias: (Array.isArray(data.data.categorias) && data.data.categorias.length > 0) ? data.data.categorias : DEFAULT_CONFIG.categorias,
+      colecciones: {
+        ...DEFAULT_CONFIG.colecciones,
+        ...(data.data.colecciones || {}),
+        items: (Array.isArray(data.data.colecciones?.items) && data.data.colecciones.items.length > 0) ? data.data.colecciones.items : DEFAULT_CONFIG.colecciones.items
+      },
     };
 
     return NextResponse.json(mergedConfig);

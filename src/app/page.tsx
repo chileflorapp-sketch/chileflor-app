@@ -43,29 +43,22 @@ function TrustTicker() {
   );
 }
 
-// ── Componente: Categorías visuales ──
-const CATS = [
-  { emoji: '🌹', name: 'Rosas', sub: 'Clásicas y de temporada', link: '/catalogo?cat=Flores', color: 'from-rose-900 to-rose-700', img: 'https://images.unsplash.com/photo-1561181286-d3fee7d55364?auto=format&fit=crop&w=800&q=80' },
-  { emoji: '💐', name: 'Ramos', sub: 'Para toda ocasión', link: '/catalogo?cat=Ramos de Flores', color: 'from-pink-900 to-fuchsia-700', img: 'https://images.unsplash.com/photo-1490750967868-88df5691cc8b?auto=format&fit=crop&w=800&q=80' },
-  { emoji: '💒', name: 'Matrimonios', sub: 'Decoración nupcial', link: '/catalogo?cat=Matrimonios', color: 'from-amber-900 to-orange-700', img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80' },
-  { emoji: '🕊️', name: 'Homenajes', sub: 'Con amor y respeto', link: '/catalogo?cat=Homenajes', color: 'from-slate-800 to-slate-600', img: 'https://images.unsplash.com/photo-1509841811836-37dd6b1e5de1?auto=format&fit=crop&w=800&q=80' },
-  { emoji: '🎁', name: 'Regalos', sub: 'Sorprende a alguien', link: '/catalogo?cat=Regalos', color: 'from-emerald-900 to-teal-700', img: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=800&q=80' },
-  { emoji: '🌸', name: 'Día Madre', sub: 'Lo mejor para mamá', link: '/catalogo?cat=Día de la Madre', color: 'from-purple-900 to-violet-700', img: 'https://images.unsplash.com/photo-1487530811176-3780de880c2d?auto=format&fit=crop&w=800&q=80' },
-];
+// CATS was moved to siteConfig.colecciones
 
-function CategoryGrid() {
+function CategoryGrid({ config }: { config: any }) {
+  if (!config) return null;
   return (
     <section className="container mx-auto px-4 py-16 reveal">
       <div className="text-center mb-12">
-        <p className="text-primary text-sm font-bold uppercase tracking-[0.3em] mb-3">Nuestras Colecciones</p>
+        <p className="text-primary text-sm font-bold uppercase tracking-[0.3em] mb-3">{config.title}</p>
         <h2 className="text-3xl md:text-5xl font-bold text-gray-900 leading-tight">
-          Encuentra el arreglo <br className="hidden md:block" />
-          <span className="bg-gradient-to-r from-primary via-pink-500 to-rose-400 bg-clip-text text-transparent animate-text-shimmer">perfecto para ti</span>
+          {config.subtitle} <br className="hidden md:block" />
+          <span className="bg-gradient-to-r from-primary via-pink-500 to-rose-400 bg-clip-text text-transparent animate-text-shimmer">{config.subtitleHighlight}</span>
         </h2>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-        {CATS.map((cat, i) => (
+        {config.items?.map((cat: any, i: number) => (
           <a key={i} href={cat.link} className="cat-card group relative rounded-3xl overflow-hidden aspect-[3/4] block shadow-lg">
             {/* Imagen fija de fondo */}
             <div className="absolute inset-0">
@@ -570,7 +563,7 @@ export default function HomePage() {
       <TrustTicker />
 
       {/* Categorías visuales */}
-      <CategoryGrid />
+      <CategoryGrid config={siteConfig.colecciones} />
 
       {/* Por qué Chileflor */}
       <WhyChileflor />
