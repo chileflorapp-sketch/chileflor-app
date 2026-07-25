@@ -206,26 +206,29 @@ export default function CatalogoManagement() {
     if (!file) return;
     
     setIsUploading(true);
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `catalogo/${fileName}`;
 
     try {
-      const { error: uploadError } = await supabase.storage.from('productos').upload(filePath, file);
-      if (uploadError) throw uploadError;
-      
-      const { data } = supabase.storage.from('productos').getPublicUrl(filePath);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('bucket', 'productos');
+      formData.append('folder', 'catalogo');
+
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || `Error ${res.status}`);
+
       setEditGaleria(prev => {
-        const next = [...prev, data.publicUrl];
-        if (next.length === 1) setEditImagen(data.publicUrl);
+        const next = [...prev, result.url];
+        if (next.length === 1) setEditImagen(result.url);
         return next;
       });
-    } catch (error) {
-      showToast('Error al subir la imagen. Verifica que el Bucket "productos" existe y es público.');
+    } catch (error: any) {
+      showToast(`Error al subir la imagen: ${error.message}`);
     } finally {
       setIsUploading(false);
     }
   };
+
 
   const handleAIAssist = () => {
     if (!editNombre) {

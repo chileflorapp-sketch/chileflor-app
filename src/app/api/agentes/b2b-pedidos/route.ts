@@ -15,8 +15,12 @@ async function readDB() {
 }
 
 async function writeDB(data: any) {
-  await fs.mkdir(path.dirname(DB_FILE), { recursive: true });
-  await fs.writeFile(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  try {
+    await fs.mkdir(path.dirname(DB_FILE), { recursive: true });
+    await fs.writeFile(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Skipping local writeDB (likely Vercel environment):', err);
+  }
 }
 
 export async function GET() {

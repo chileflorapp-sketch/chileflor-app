@@ -114,25 +114,30 @@ export default function AparienciaPage() {
     setUploadingPath(pathKey);
     
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const filePath = `apariencia/${fileName}`; // Usaremos la carpeta apariencia dentro del bucket productos
-      
-      const { error: uploadError } = await supabase.storage.from('productos').upload(filePath, file);
-      
-      if (uploadError) {
-        throw uploadError;
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('bucket', 'productos');
+      formData.append('folder', 'apariencia');
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || `Error ${res.status}`);
       }
-      
-      const { data: { publicUrl } } = supabase.storage.from('productos').getPublicUrl(filePath);
-      
-      updateConfig(path, publicUrl);
+
+      updateConfig(path, result.url);
     } catch (err: any) {
       alert(`Error subiendo imagen: ${err.message}`);
     } finally {
       setUploadingPath(null);
     }
   };
+
 
   const fontsList = ['Inter', 'Playfair Display', 'Cormorant Garamond', 'Cinzel', 'Great Vibes', 'Montserrat', 'Lora', 'Dancing Script'];
 

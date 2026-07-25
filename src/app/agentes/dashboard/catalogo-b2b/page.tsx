@@ -189,22 +189,25 @@ export default function CatalogoB2BManagement() {
     if (!file) return;
     
     setIsUploading(true);
-    const fileExt = file.name.split('.').pop();
-    const fileName = `b2b-${Math.random()}.${fileExt}`;
-    const filePath = `catalogo/${fileName}`;
 
     try {
-      const { error: uploadError } = await supabase.storage.from('productos').upload(filePath, file);
-      if (uploadError) throw uploadError;
-      
-      const { data } = supabase.storage.from('productos').getPublicUrl(filePath);
-      setEditImagen(data.publicUrl);
-    } catch (error) {
-      showToast('Error al subir la imagen. Verifica que el Bucket "productos" existe.');
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('bucket', 'productos');
+      formData.append('folder', 'catalogo');
+
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || `Error ${res.status}`);
+
+      setEditImagen(result.url);
+    } catch (error: any) {
+      showToast(`Error al subir la imagen: ${error.message}`);
     } finally {
       setIsUploading(false);
     }
   };
+
 
   return (
     <div className="animate-in fade-in duration-500 relative">
