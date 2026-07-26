@@ -24,6 +24,11 @@ export default function PedidosManagement() {
     cliente: '', telefono: '', direccion: '', rut: '', giro: '', tipo_documento: 'orden_compra'
   });
 
+  const [tarjetaDigital, setTarjetaDigital] = useState<any>(null);
+  const [printMode, setPrintMode] = useState<'orden' | 'tarjeta'>('orden');
+  const [isEditingTarjeta, setIsEditingTarjeta] = useState(false);
+  const [tarjetaMessage, setTarjetaMessage] = useState('');
+
   useEffect(() => {
     fetchOrders();
 
@@ -91,7 +96,7 @@ export default function PedidosManagement() {
 
   const filteredOrders = orders.filter(o => o.tipo === activeTab);
 
-  const handleOpenOrder = (order: any) => {
+  const handleOpenOrder = async (order: any) => {
     setSelectedOrder(order);
     setStagedStatus(order.estado);
     setEditClientData({
@@ -103,6 +108,23 @@ export default function PedidosManagement() {
       tipo_documento: order.facturacion?.tipo_documento || 'orden_compra'
     });
     setIsEditingClient(false);
+    
+    // Fetch tarjeta
+    setTarjetaDigital(null);
+    setIsEditingTarjeta(false);
+    try {
+      const { data: tarjetas } = await supabase
+        .from('tarjetas')
+        .select('*')
+        .eq('order_id', order.id);
+        
+      if (tarjetas && tarjetas.length > 0) {
+        setTarjetaDigital(tarjetas[0]);
+        setTarjetaMessage(tarjetas[0].message || '');
+      }
+    } catch (e) {
+      console.error("Error fetching tarjeta:", e);
+    }
   };
 
   const handleSaveClientData = async () => {
@@ -152,6 +174,24 @@ export default function PedidosManagement() {
     }
   };
 
+  const handleSaveTarjeta = async () => {
+    if (!tarjetaDigital) return;
+    try {
+      await supabase
+        .from('tarjetas')
+        .update({ message: tarjetaMessage })
+        .eq('id', tarjetaDigital.id);
+        
+      setTarjetaDigital({ ...tarjetaDigital, message: tarjetaMessage });
+      setIsEditingTarjeta(false);
+      setToastMessage('Mensaje de tarjeta actualizado');
+    } catch (e) {
+      console.error(e);
+      setToastMessage('Error al actualizar tarjeta');
+    }
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
   const handleUpdateStatus = async () => {
     if (!selectedOrder || !stagedStatus) return;
     
@@ -181,8 +221,11 @@ export default function PedidosManagement() {
     setTimeout(() => setToastMessage(''), 3000);
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = (mode: 'orden' | 'tarjeta') => {
+    setPrintMode(mode);
+    setTimeout(() => {
+      window.print();
+    }, 100);
   };
 
   const handleWhatsApp = () => {
@@ -399,36 +442,38 @@ export default function PedidosManagement() {
           <div className="bg-[#1C1C1E] border border-gray-800 rounded-3xl w-full max-w-2xl relative z-10 shadow-2xl overflow-y-auto overflow-x-hidden max-h-[90vh] no-scrollbar print:overflow-visible print:max-h-none print:bg-white print:text-black print:border-none print:shadow-none print:w-full print:max-w-none print:mx-0 print:rounded-none">
             
             {/* VISTA DE IMPRESIÓN */}
-            <div className="hidden print:block w-full p-8 font-sans bg-white">
+            <div className={`hidden print:block w-full bg-white ${printMode === 'orden' ? 'p-8 font-sans' : 'p-0 m-0 w-full h-full'}`}>
               
-              {/* HEADER SII FORMAT */}
-              <div className="flex justify-between items-start mb-4">
-                {/* Left: Logo & Company Info */}
-                <div className="flex gap-4 items-start w-[60%]">
-                  <img src="/logo.png" alt="Chileflor" className="w-40 object-contain print:invert opacity-90 mt-2" />
-                  <div className={`text-[${colorDominante}]`}>
-                    <h1 className="text-xl font-black mb-2 leading-tight" style={{ color: colorDominante }}>CHILEFLOR SpA.</h1>
-                    <div className="text-xs font-bold leading-tight" style={{ color: isSII ? '#2B4B8B' : colorDominante }}>
-                      <p>Giro: VENTA DE FLORES E INSUMOS, PRODUCCIÓN Y</p>
-                      <p>DISTRIBUCIÓN DE MATERIAS PRIMAS FLORALES</p>
-                      <p className="mt-1">DIRECCIÓN: AV. LAS FLORES 123 - SANTIAGO</p>
-                      <p className="mt-1">eMail: contacto@chileflor.cl   Teléfono: +569 1234 5678</p>
+              {printMode === 'orden' ? (
+                <>
+                  {/* HEADER SII FORMAT */}
+                  <div className="flex justify-between items-start mb-4">
+                    {/* Left: Logo & Company Info */}
+                    <div className="flex gap-4 items-start w-[60%]">
+                      <img src="/logo.png" alt="Chileflor" className="w-40 object-contain print:invert opacity-90 mt-2" />
+                      <div className={`text-[${colorDominante}]`}>
+                        <h1 className="text-xl font-black mb-2 leading-tight" style={{ color: colorDominante }}>CHILEFLOR SpA.</h1>
+                        <div className="text-xs font-bold leading-tight" style={{ color: isSII ? '#2B4B8B' : colorDominante }}>
+                          <p>Giro: VENTA DE FLORES E INSUMOS, PRODUCCIÓN Y</p>
+                          <p>DISTRIBUCIÓN DE MATERIAS PRIMAS FLORALES</p>
+                          <p className="mt-1">DIRECCIÓN: AV. LAS FLORES 123 - SANTIAGO</p>
+                          <p className="mt-1">eMail: contacto@chileflor.cl   Teléfono: +569 1234 5678</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: The Red Box */}
+                    <div className="w-[35%] flex flex-col items-center">
+                      <div className={`border-[3px] p-4 text-center w-full mb-1`} style={{ borderColor: colorDominante, color: colorDominante }}>
+                        <p className="font-bold text-lg">R.U.T.: 78.467.857-1</p>
+                        <p className="font-bold text-xl my-2 leading-tight">{titleDoc}</p>
+                        <p className="font-bold text-lg">Nº {selectedOrder.id.replace('ORD-', '')}</p>
+                      </div>
+                      <p className="text-xs font-bold text-center" style={{ color: colorDominante }}>
+                        S.I.I. - SANTIAGO CENTRO
+                      </p>
                     </div>
                   </div>
-                </div>
-
-                {/* Right: The Red Box */}
-                <div className="w-[35%] flex flex-col items-center">
-                  <div className={`border-[3px] p-4 text-center w-full mb-1`} style={{ borderColor: colorDominante, color: colorDominante }}>
-                    <p className="font-bold text-lg">R.U.T.: 78.467.857-1</p>
-                    <p className="font-bold text-xl my-2 leading-tight">{titleDoc}</p>
-                    <p className="font-bold text-lg">Nº {selectedOrder.id.replace('ORD-', '')}</p>
-                  </div>
-                  <p className="text-xs font-bold text-center" style={{ color: colorDominante }}>
-                    S.I.I. - SANTIAGO CENTRO
-                  </p>
-                </div>
-              </div>
 
               {/* Date */}
               <div className="text-right text-xs mb-4 font-bold pr-4" style={{ color: isSII ? '#2B4B8B' : 'black' }}>
@@ -544,6 +589,21 @@ export default function PedidosManagement() {
                   </table>
                 </div>
               </div>
+                </>
+              ) : (
+                /* FORMATO DE IMPRESIÓN TARJETA */
+                tarjetaDigital && (
+                  <div className="w-[10cm] h-[15cm] mx-auto relative overflow-hidden" style={{ pageBreakInside: 'avoid' }}>
+                    <img src={tarjetaDigital.image_url} className="absolute inset-0 w-full h-full object-cover z-0" alt="Fondo Tarjeta" />
+                    <div className="absolute inset-0 bg-black/40 z-0"></div>
+                    <div className="relative z-10 flex flex-col justify-center items-center h-full p-8 text-center text-white">
+                      <p className="whitespace-pre-wrap font-serif" style={{ fontSize: '20px', lineHeight: '1.5', textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                        {tarjetaDigital.message}
+                      </p>
+                    </div>
+                  </div>
+                )
+              )}
             </div>
 
             {/* VISTA DIGITAL (Oculta en Impresión) */}
@@ -713,8 +773,45 @@ export default function PedidosManagement() {
                 </div>
               </div>
 
+              {/* Módulo de Tarjeta Digital */}
+              {tarjetaDigital && (
+                <div className="print:hidden border border-gray-800 rounded-2xl p-4 bg-[#111111] mx-8 mb-6 mt-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <p className="text-xs text-gray-500 uppercase tracking-widest font-bold flex items-center gap-2">
+                      <span>💌</span> Tarjeta Digital (Dedicatoria)
+                    </p>
+                    <button onClick={() => setIsEditingTarjeta(!isEditingTarjeta)} className="text-xs text-primary hover:text-white transition-colors">
+                      {isEditingTarjeta ? 'Cancelar' : '✏️ Editar'}
+                    </button>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-6">
+                    <div className="w-32 shrink-0 aspect-[3/4] relative rounded-lg overflow-hidden border border-gray-700 shadow-md">
+                      <img src={tarjetaDigital.image_url} className="absolute inset-0 w-full h-full object-cover" />
+                    </div>
+                    
+                    <div className="flex-1 flex flex-col justify-center">
+                      {isEditingTarjeta ? (
+                        <>
+                          <textarea 
+                            value={tarjetaMessage}
+                            onChange={(e) => setTarjetaMessage(e.target.value)}
+                            className="w-full h-32 bg-[#1A1A1D] border border-gray-700 rounded-lg p-3 text-sm text-white focus:border-primary outline-none resize-none mb-3"
+                          />
+                          <button onClick={handleSaveTarjeta} className="self-end bg-primary hover:bg-fuchsia-600 text-white font-bold py-2 px-6 rounded-lg text-sm transition-colors">Guardar Mensaje</button>
+                        </>
+                      ) : (
+                        <p className="text-white whitespace-pre-wrap italic bg-gray-900/50 p-4 rounded-xl border border-gray-800">
+                          "{tarjetaDigital.message}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Botonera de Acción - Oculta en impresión */}
-              <div className="print:hidden pt-4">
+              <div className="print:hidden pt-4 px-8 pb-8">
                 <p className="text-xs text-gray-500 uppercase tracking-widest mb-3 font-bold">Actualizar Estado</p>
                 <div className="flex flex-wrap items-center gap-2 mb-6">
                   {['PENDIENTE_PAGO', 'PREPARANDO', 'EN_RUTA', 'COMPLETADO'].map(status => {
@@ -752,9 +849,14 @@ export default function PedidosManagement() {
                   <button onClick={handleWhatsApp} className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors">
                     💬 Notificar WhatsApp
                   </button>
-                  <button onClick={handlePrint} className="bg-white text-black hover:bg-gray-200 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                  <button onClick={() => handlePrint('orden')} className="bg-white text-black hover:bg-gray-200 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors">
                     🖨️ Imprimir Orden
                   </button>
+                  {tarjetaDigital && (
+                    <button onClick={() => handlePrint('tarjeta')} className="col-span-2 bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                      🌸 Imprimir Tarjeta Física
+                    </button>
+                  )}
                 </div>
               </div>
               
