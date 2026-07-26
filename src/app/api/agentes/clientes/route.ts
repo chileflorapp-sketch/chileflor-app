@@ -5,6 +5,11 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+      console.warn('⚠️ Supabase environment variables are missing. Returning empty data for /api/agentes/clientes.');
+      return NextResponse.json([]);
+    }
+
     const { data: pedidos, error } = await supabaseAdmin
       .from('pedidos')
       .select('id, cliente, telefono, detalles, total, created_at');
