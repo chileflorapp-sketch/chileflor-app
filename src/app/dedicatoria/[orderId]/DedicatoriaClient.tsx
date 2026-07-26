@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { toJpeg } from 'html-to-image';
+import html2canvas from 'html2canvas';
 
 const GALLERY_IMAGES = [
   '/imagenes/02917bc90c25810edc8f13fd243ab2d8.jpg',
@@ -112,14 +112,12 @@ export default function DedicatoriaClient({ orderId }: Props) {
 
     try {
       // 1. Capturar la tarjeta como imagen
-      const dataUrl = await toJpeg(cardEl, { 
-        quality: 0.95,
-        pixelRatio: 2,
-        style: {
-          transform: 'scale(1)',
-          transformOrigin: 'top left',
-        }
+      const canvas = await html2canvas(cardEl, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
       });
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
       setCardImage(dataUrl);
 
       // 2. Subir al servidor
