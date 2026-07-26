@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import html2canvas from 'html2canvas';
+import { toJpeg } from 'html-to-image';
 
 const GALLERY_IMAGES = [
   '/imagenes/02917bc90c25810edc8f13fd243ab2d8.jpg',
@@ -84,6 +84,18 @@ export default function DedicatoriaClient({ orderId }: Props) {
   const [selectedCard, setSelectedCard] = useState(0);
   const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [activeBlobUrl, setActiveBlobUrl] = useState('');
+
+  // Fetch the active image as a blob to prevent Safari cross-origin black screen bug
+  useEffect(() => {
+    fetch(GALLERY_IMAGES[selectedCard])
+      .then(res => res.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        setActiveBlobUrl(url);
+      })
+      .catch(err => console.error('Error preloading image blob:', err));
+  }, [selectedCard]);
 
   // Auto-ajustar la altura del textarea
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -112,12 +124,14 @@ export default function DedicatoriaClient({ orderId }: Props) {
 
     try {
       // 1. Capturar la tarjeta como imagen
-      const canvas = await html2canvas(cardEl, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff'
+      const dataUrl = await toJpeg(cardEl, { 
+        quality: 0.95,
+        pixelRatio: 2,
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left',
+        }
       });
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
       setCardImage(dataUrl);
 
       // 2. Subir al servidor
@@ -429,12 +443,10 @@ export default function DedicatoriaClient({ orderId }: Props) {
           {/* The Physical Card */}
           <div id="tarjeta-preview" className="w-[280px] sm:w-[320px] aspect-[3/4] rounded-2xl flex flex-col justify-between p-6 relative overflow-hidden transition-all duration-700 shadow-2xl group border border-white/20 bg-white">
             {/* Background Image */}
-            <img 
-              src={activeCardBg} 
-              alt="Fondo"
-              className="absolute inset-0 w-full h-full object-cover z-0"
-              crossOrigin="anonymous"
-            />
+            <div 
+              className="absolute inset-0 z-0 bg-cover bg-center" 
+              style={{ backgroundImage: `url('${activeBlobUrl}')` }}
+            ></div>
             
             {/* Overlay for text readability */}
             <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none group-hover:bg-black/50 transition-colors"></div>
