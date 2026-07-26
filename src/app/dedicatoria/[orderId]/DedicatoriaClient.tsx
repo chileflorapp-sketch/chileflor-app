@@ -227,8 +227,8 @@ export default function DedicatoriaClient({ orderId }: Props) {
           <p className="text-gray-500 mb-6">Pedido #{orderId}</p>
 
           <div className="mb-6 p-5 bg-gray-50 rounded-2xl border border-gray-100 w-full text-center">
-            <p className="text-sm text-gray-600 font-medium mb-2">Este es el link secreto:</p>
-            <p className="text-sm font-bold text-primary break-all bg-white p-3 rounded-lg border border-gray-200">
+            <p className="text-sm text-gray-800 font-bold mb-2">✨ Envía este link a Chileflor para que comience la magia ✨</p>
+            <p className="text-sm font-bold text-primary break-all bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
               {linkMagico}
             </p>
           </div>
