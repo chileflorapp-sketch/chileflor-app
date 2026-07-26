@@ -196,7 +196,12 @@ export default function CheckoutPage() {
         message += `📆 *Fecha/Hora:* ${deliveryDate} (${deliveryTime})\n`;
       }
       message += `📍 *Dirección:* ${dirStr}\n\n`;
-      message += `Me gustaría pagar mediante: *${paymentNames[selectedPaymentMethod]}*.`;
+      
+      if (selectedPaymentMethod === 'mercadopago') {
+        message += `Me gustaría pagar mediante: *Mercado Pago*. Por favor, solicito me envíen el link de pago. ¡Nos gusta hacer las cosas bien!`;
+      } else {
+        message += `Me gustaría pagar mediante: *${paymentNames[selectedPaymentMethod]}*.`;
+      }
       
       const whatsappUrl = `https://wa.me/56979992848?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
