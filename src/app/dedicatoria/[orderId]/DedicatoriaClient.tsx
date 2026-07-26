@@ -223,24 +223,19 @@ export default function DedicatoriaClient({ orderId }: Props) {
           <div className="w-16 h-16 bg-green-50 text-green-500 rounded-full flex items-center justify-center mb-6">
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
           </div>
-          <h2 className="text-3xl font-black mb-2 tracking-tight text-gray-900">¡Tarjeta Creada!</h2>
+          <h2 className="text-3xl font-black mb-2 tracking-tight text-gray-900">¡Sorpresa Creada!</h2>
           <p className="text-gray-500 mb-6">Pedido #{orderId}</p>
-          
-          {cardImage && (
-            <div className="mb-6 w-48 rounded-xl overflow-hidden shadow-2xl ring-4 ring-gray-100 transform -rotate-2">
-              <img src={cardImage} alt="Tarjeta final" className="w-full h-auto object-cover" />
-            </div>
-          )}
 
-          {/* QR Code real */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-            <img src={qrUrl} alt="QR Code" className="w-36 h-36 mx-auto mb-3" />
-            <p className="text-xs text-gray-400 font-medium">Escanea o comparte el link</p>
+          <div className="mb-6 p-5 bg-gray-50 rounded-2xl border border-gray-100 w-full text-center">
+            <p className="text-sm text-gray-600 font-medium mb-2">Este es el link secreto:</p>
+            <p className="text-sm font-bold text-primary break-all bg-white p-3 rounded-lg border border-gray-200">
+              {linkMagico}
+            </p>
           </div>
 
           {/* Info de expiración */}
           <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-3 w-full">
-            <p className="text-xs text-amber-700 font-medium">⏳ Esta tarjeta se autodestruye en 72 horas si no recibe agradecimiento, o 72 horas después de recibirlo.</p>
+            <p className="text-xs text-amber-700 font-medium">⏳ Esta sorpresa se autodestruye en 72 horas si no recibe agradecimiento, o 72 horas después de recibirlo.</p>
           </div>
           
           <button 
