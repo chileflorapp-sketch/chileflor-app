@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     // 1. Upload to Supabase Storage
     const { error: uploadError } = await supabaseAdmin
       .storage
-      .from('tarjetas_temporales')
+      .from('tarjetas')
       .upload(fileName, buffer, {
         contentType: type,
         cacheControl: '3600',
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     // 2. Get Public URL
     const { data: { publicUrl } } = supabaseAdmin
       .storage
-      .from('tarjetas_temporales')
+      .from('tarjetas')
       .getPublicUrl(fileName);
 
     // 3. Insert into database
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     if (dbError) {
       console.error('DB Error:', dbError);
       // Cleanup the uploaded image if DB insert fails
-      await supabaseAdmin.storage.from('tarjetas_temporales').remove([fileName]);
+      await supabaseAdmin.storage.from('tarjetas').remove([fileName]);
       return NextResponse.json({ error: 'Failed to save to database' }, { status: 500 });
     }
 

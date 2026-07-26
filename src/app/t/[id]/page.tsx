@@ -23,14 +23,14 @@ export default async function TarjetaPage({ params }: { params: Promise<{ id: st
   const now = new Date();
   const hoursAlive = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
 
-  // Rule: If thanked, visible for 48h after thanks. If not thanked, expires at 72h.
+  // Rule: If thanked, visible for 72h after thanks. If not thanked, expires at 72h.
   let isExpired = false;
 
   if (tarjeta.agradecimiento && tarjeta.agradecido_at) {
-    // Thanked: check if 48h passed since thanks
+    // Thanked: check if 72h passed since thanks
     const agradecidoAt = new Date(tarjeta.agradecido_at);
     const hoursSinceThanks = (now.getTime() - agradecidoAt.getTime()) / (1000 * 60 * 60);
-    isExpired = hoursSinceThanks > 48;
+    isExpired = hoursSinceThanks > 72;
   } else {
     // Not thanked: expires after 72h
     isExpired = hoursAlive > 72;
@@ -55,7 +55,7 @@ export default async function TarjetaPage({ params }: { params: Promise<{ id: st
   if (tarjeta.agradecimiento && tarjeta.agradecido_at) {
     const agradecidoAt = new Date(tarjeta.agradecido_at);
     const hoursSinceThanks = (now.getTime() - agradecidoAt.getTime()) / (1000 * 60 * 60);
-    hoursRemaining = Math.max(0, 48 - hoursSinceThanks);
+    hoursRemaining = Math.max(0, 72 - hoursSinceThanks);
   } else {
     hoursRemaining = Math.max(0, 72 - hoursAlive);
   }

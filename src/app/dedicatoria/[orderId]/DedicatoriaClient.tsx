@@ -228,7 +228,7 @@ export default function DedicatoriaClient({ orderId }: Props) {
 
           {/* Info de expiración */}
           <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-3 w-full">
-            <p className="text-xs text-amber-700 font-medium">⏳ Esta tarjeta se autodestruye en 72 horas si no recibe agradecimiento, o 48 horas después de recibirlo.</p>
+            <p className="text-xs text-amber-700 font-medium">⏳ Esta tarjeta se autodestruye en 72 horas si no recibe agradecimiento, o 72 horas después de recibirlo.</p>
           </div>
           
           <button 
