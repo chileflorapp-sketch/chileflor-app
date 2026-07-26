@@ -431,10 +431,12 @@ export default function DedicatoriaClient({ orderId }: Props) {
           {/* The Physical Card */}
           <div id="tarjeta-preview" className="w-[280px] sm:w-[320px] aspect-[3/4] rounded-2xl flex flex-col justify-between p-6 relative overflow-hidden transition-all duration-700 shadow-2xl group border border-white/20 bg-white">
             {/* Background Image */}
-            <div 
-              className="absolute inset-0 z-0 bg-cover bg-center" 
-              style={{ backgroundImage: `url('${activeCardBg}')` }}
-            ></div>
+            <img 
+              src={activeCardBg} 
+              alt="Fondo"
+              className="absolute inset-0 w-full h-full object-cover z-0"
+              crossOrigin="anonymous"
+            />
             
             {/* Overlay for text readability */}
             <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none group-hover:bg-black/50 transition-colors"></div>
