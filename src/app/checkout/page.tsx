@@ -144,7 +144,9 @@ export default function CheckoutPage() {
         console.warn('Warning al guardar pedido en DB:', dbErr);
       }
 
-      // 2. Si eligió Mercado Pago, intentar la pasarela oficial online
+      // 2. [DESACTIVADO TEMPORALMENTE] Si eligió Mercado Pago, intentar la pasarela oficial online
+      // Se solicitó que por ahora todas las ventas vayan a WhatsApp hasta dominar la integración.
+      /*
       if (selectedPaymentMethod === 'mercadopago') {
         try {
           const mpRes = await fetch('/api/checkout', {
@@ -171,6 +173,7 @@ export default function CheckoutPage() {
           console.error('Error de red al conectar con Mercado Pago:', mpErr);
         }
       }
+      */
 
       // 3. Flujo por WhatsApp (para Transferencia, Efectivo o Fallback de Mercado Pago)
       const paymentNames: Record<string, string> = {
