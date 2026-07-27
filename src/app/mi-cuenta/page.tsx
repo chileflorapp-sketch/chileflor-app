@@ -16,8 +16,16 @@ export default function MiCuenta() {
   const [fetchingOrders, setFetchingOrders] = useState(false);
 
   useEffect(() => {
+    // Evitar race condition: si loading termina pero no hay user en el contexto, 
+    // verificamos directamente con Supabase antes de echarlo a login.
     if (!loading && !user) {
-      router.push('/mi-cuenta/login');
+      const verify = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          router.push('/mi-cuenta/login');
+        }
+      };
+      verify();
     }
   }, [user, loading, router]);
 

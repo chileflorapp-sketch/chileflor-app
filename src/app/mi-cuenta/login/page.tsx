@@ -24,7 +24,10 @@ export default function ClientLogin() {
     });
 
     if (error) {
-      setError(error.message);
+      let msg = error.message;
+      if (msg === 'Email not confirmed') msg = 'Debes confirmar tu correo electrónico haciendo clic en el enlace que te enviamos al registrarte.';
+      if (msg === 'Invalid login credentials') msg = 'Correo o contraseña incorrectos.';
+      setError(msg);
       setLoading(false);
     } else {
       router.push('/mi-cuenta');

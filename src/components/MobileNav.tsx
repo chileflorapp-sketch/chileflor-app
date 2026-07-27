@@ -45,12 +45,6 @@ export default function MobileNav() {
           <span className="text-[10px] font-semibold text-primary mt-1">Club</span>
         </a>
 
-        {/* Búsqueda */}
-        <button onClick={() => setSearchOpen(true)} className="flex flex-col items-center gap-0.5 text-gray-400 hover:text-primary transition-colors">
-          <Search size={20} />
-          <span className="text-[10px] font-semibold">Buscar</span>
-        </button>
-
         {/* Cuenta */}
         <a href="/mi-cuenta" className={linkClass('/mi-cuenta')}>
           <User size={20} className={isActive('/mi-cuenta') ? 'fill-primary/20' : ''} />

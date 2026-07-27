@@ -13,6 +13,7 @@ export default function ClientRegister() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [requireConfirmation, setRequireConfirmation] = useState(false);
   const router = useRouter();
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -36,9 +37,15 @@ export default function ClientRegister() {
     } else {
       setSuccess(true);
       setLoading(false);
-      setTimeout(() => {
-        router.push('/mi-cuenta');
-      }, 3000);
+      
+      // Si la sesión es null, significa que Supabase requiere confirmar el correo
+      if (!data.session) {
+        setRequireConfirmation(true);
+      } else {
+        setTimeout(() => {
+          router.push('/mi-cuenta');
+        }, 3000);
+      }
     }
   };
 
@@ -48,8 +55,21 @@ export default function ClientRegister() {
         <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-xl border border-gray-100 text-center">
           <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-6" />
           <h2 className="text-3xl font-extrabold text-gray-900 mb-2">¡Cuenta Creada!</h2>
-          <p className="text-gray-500 mb-6">Redirigiendo a tu panel de control...</p>
-          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+          
+          {requireConfirmation ? (
+            <div className="mt-4">
+              <p className="text-gray-700 font-medium mb-4">Te hemos enviado un correo electrónico para confirmar tu cuenta.</p>
+              <p className="text-sm text-gray-500 mb-6">Por favor revisa tu bandeja de entrada (y la carpeta de spam) y haz clic en el enlace para activar tu cuenta.</p>
+              <Link href="/mi-cuenta/login" className="bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-dark transition-colors inline-block">
+                Ir al Inicio de Sesión
+              </Link>
+            </div>
+          ) : (
+            <>
+              <p className="text-gray-500 mb-6">Redirigiendo a tu panel de control...</p>
+              <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+            </>
+          )}
         </div>
       </div>
     );
