@@ -329,11 +329,15 @@ function RaspeBanner() {
             </span>
           </h2>
           <p className="text-white/95 text-base md:text-lg mb-8 leading-relaxed font-medium max-w-md mx-auto md:mx-0 drop-shadow">
-            Visita nuestra sucursal, realiza tu compra y exige tu tarjeta oficial de <strong className="text-yellow-300">Chileflor</strong>. ¡Hay miles de premios instantáneos, descuentos y flores gratis!
+            Realiza tu compra en nuestro local y exige tu tarjeta oficial de <strong className="text-yellow-300">Chileflor</strong>. ¡Hay miles de premios instantáneos, descuentos y flores gratis!
+            <br/><br/>
+            <strong className="text-white bg-black/20 px-3 py-1.5 rounded-lg border border-white/10 inline-block text-sm font-bold">
+              📍 Ubicación: A un costado del estacionamiento del Cementerio Parque El Prado, Local 4. ¡Preguntar por Paco!
+            </strong>
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
             <a href="https://maps.app.goo.gl/qJzZkW1wJk2FzX1a7" target="_blank" className="bg-white text-rose-700 hover:bg-gray-50 font-black px-8 py-4 rounded-2xl shadow-xl transition-all hover:-translate-y-1 hover:shadow-2xl text-sm md:text-base flex items-center justify-center gap-2 group">
-              📍 Ubicación del Local <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              🗺️ Abrir en Google Maps <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </a>
           </div>
         </div>
