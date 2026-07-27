@@ -114,7 +114,7 @@ export default function Header() {
                   <span className="text-sm font-bold text-primary group-hover:text-white transition-colors">👋 {userName.split(' ')[0]}</span>
                 </a>
               ) : (
-                <a href="/login" className={`hidden md:block font-bold text-sm px-6 py-2.5 rounded-full transition-all ${isTransparent ? 'bg-white text-gray-900 hover:bg-gray-100 shadow-lg' : 'bg-gray-900 text-white hover:bg-gray-800 shadow-md'}`}>
+                <a href="/mi-cuenta/login" className={`hidden md:block font-bold text-sm px-6 py-2.5 rounded-full transition-all ${isTransparent ? 'bg-white text-gray-900 hover:bg-gray-100 shadow-lg' : 'bg-gray-900 text-white hover:bg-gray-800 shadow-md'}`}>
                   Ingresar
                 </a>
               )}

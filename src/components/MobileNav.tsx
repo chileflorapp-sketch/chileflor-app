@@ -51,6 +51,12 @@ export default function MobileNav() {
           <span className="text-[10px] font-semibold">Buscar</span>
         </button>
 
+        {/* Cuenta */}
+        <a href="/mi-cuenta" className={linkClass('/mi-cuenta')}>
+          <User size={20} className={isActive('/mi-cuenta') ? 'fill-primary/20' : ''} />
+          <span className="text-[10px] font-semibold">Cuenta</span>
+        </a>
+
         {/* Carrito → abre drawer */}
         <button onClick={openCart} className={`flex flex-col items-center gap-0.5 relative transition-colors ${isActive('/checkout') ? 'text-primary' : 'text-gray-400'}`}>
           <ShoppingCart size={20} />

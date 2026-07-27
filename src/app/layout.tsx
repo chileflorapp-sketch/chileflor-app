@@ -7,6 +7,7 @@ import WhatsAppButton from '@/components/WhatsAppButton';
 import TopBanner from '@/components/TopBanner';
 import { CartProvider } from '@/context/CartContext';
 import { WishlistProvider } from '@/context/WishlistContext';
+import { ClientAuthProvider } from '@/context/ClientAuthContext';
 import FloatingCartToast from '@/components/FloatingCartToast';
 import MobileNav from '@/components/MobileNav';
 import PageWrapper from '@/components/PageWrapper';
@@ -49,8 +50,9 @@ export default function RootLayout({
         <div className="pollen-container" aria-hidden="true"></div>
         <PremiumPreloader />
         <ScrollReveal />
-        <WishlistProvider>
-          <CartProvider>
+        <ClientAuthProvider>
+          <WishlistProvider>
+            <CartProvider>
             <CartDrawer />
             <FloatingCartToast />
             <TopBanner />
@@ -67,8 +69,9 @@ export default function RootLayout({
           <Footer />
 
           <MobileNav />
-          </CartProvider>
-        </WishlistProvider>
+            </CartProvider>
+          </WishlistProvider>
+        </ClientAuthProvider>
       </body>
     </html>
   );
