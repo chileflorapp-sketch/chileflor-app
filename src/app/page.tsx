@@ -336,7 +336,7 @@ function RaspeBanner() {
             </strong>
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-            <a href="https://maps.app.goo.gl/qJzZkW1wJk2FzX1a7" target="_blank" className="bg-white text-rose-700 hover:bg-gray-50 font-black px-8 py-4 rounded-2xl shadow-xl transition-all hover:-translate-y-1 hover:shadow-2xl text-sm md:text-base flex items-center justify-center gap-2 group">
+            <a href="https://www.google.com/maps/search/?api=1&query=Cementerio+Parque+El+Prado" target="_blank" className="bg-white text-rose-700 hover:bg-gray-50 font-black px-8 py-4 rounded-2xl shadow-xl transition-all hover:-translate-y-1 hover:shadow-2xl text-sm md:text-base flex items-center justify-center gap-2 group">
               🗺️ Abrir en Google Maps <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </a>
           </div>
