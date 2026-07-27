@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, ArrowRight, ShieldCheck, Tag, Truck, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ArrowRight, ShieldCheck, Tag, Truck, CheckCircle } from 'lucide-react';
 
 export default function B2BRegistrationPage() {
   const router = useRouter();
@@ -51,7 +51,7 @@ export default function B2BRegistrationPage() {
           <div className="max-w-xl mx-auto mb-10">
             {submitted ? (
               <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-6 text-center animate-in zoom-in-95 duration-300">
-                <CheckCircle2 className="w-12 h-12 text-yellow-400 mx-auto mb-2 animate-bounce" />
+                <CheckCircle className="w-12 h-12 text-yellow-400 mx-auto mb-2 animate-bounce" />
                 <h3 className="text-xl font-bold text-white mb-1">¡Inscripción recibida!</h3>
                 <p className="text-yellow-400/90 text-sm font-medium">Redirigiéndote al catálogo mayorista...</p>
               </div>

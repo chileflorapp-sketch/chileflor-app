@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { Mail, Phone, User, Calendar, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { Mail, Phone, User, Calendar, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ClientRegister() {
@@ -77,7 +77,7 @@ export default function ClientRegister() {
     return (
       <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 bg-gray-50">
         <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-xl border border-gray-100 text-center">
-          <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-6" />
+          <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
           <h2 className="text-3xl font-extrabold text-gray-900 mb-2">¡Bienvenido al Club!</h2>
           
           {requireConfirmation ? (

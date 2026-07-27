@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { Mail, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { Mail, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ClientLogin() {
@@ -36,7 +36,7 @@ export default function ClientLogin() {
     return (
       <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 bg-gray-50">
         <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-xl border border-gray-100 text-center animate-in fade-in zoom-in duration-500">
-          <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-6" />
+          <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
           <h2 className="text-3xl font-extrabold text-gray-900 mb-2">¡Enlace Enviado!</h2>
           <p className="text-gray-700 font-medium mb-4 mt-4">
             Hemos enviado un enlace mágico a <strong>{email}</strong>
