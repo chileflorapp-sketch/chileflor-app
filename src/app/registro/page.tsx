@@ -1,5 +1,11 @@
-import { redirect } from 'next/navigation';
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function RegistroPage() {
-  redirect('/mi-cuenta/registro');
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/mi-cuenta/registro');
+  }, [router]);
+  return null;
 }

@@ -1,5 +1,11 @@
-import { redirect } from 'next/navigation';
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  redirect('/mi-cuenta/login');
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/mi-cuenta/login');
+  }, [router]);
+  return null;
 }
