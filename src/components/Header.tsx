@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import '../styles/logo-animation.css';
 import { createClient } from '@/utils/supabase/client';
 import { useCart } from '@/context/CartContext';
-import { ShoppingCart, Search } from 'lucide-react';
+import { ShoppingCart, Search, User } from 'lucide-react';
 import SearchOverlay from './SearchOverlay';
 
 export default function Header() {
@@ -109,15 +109,16 @@ export default function Header() {
               </button>
 
               {/* User / Login */}
-              {userName ? (
-                <a href="/mi-cuenta" className="hidden md:flex items-center gap-2 bg-primary/10 hover:bg-primary hover:text-white transition-all px-4 py-2 rounded-full border border-primary/20 cursor-pointer group">
-                  <span className="text-sm font-bold text-primary group-hover:text-white transition-colors">👋 {userName.split(' ')[0]}</span>
-                </a>
-              ) : (
-                <a href="/mi-cuenta/login" className={`hidden md:block font-bold text-sm px-6 py-2.5 rounded-full transition-all ${isTransparent ? 'bg-white text-gray-900 hover:bg-gray-100 shadow-lg' : 'bg-gray-900 text-white hover:bg-gray-800 shadow-md'}`}>
-                  Ingresar
-                </a>
-              )}
+              <a
+                href={userName ? "/mi-cuenta" : "/mi-cuenta/login"}
+                className={`relative cursor-pointer hover:scale-110 active:scale-95 transition-transform flex items-center p-2 rounded-full ${
+                  isTransparent ? 'text-white hover:bg-white/10' : 'text-gray-800 hover:bg-gray-100'
+                }`}
+                aria-label="Mi Cuenta"
+                title={userName ? `Hola, ${userName.split(' ')[0]}` : "Ingresar a mi cuenta"}
+              >
+                <User className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
+              </a>
             </div>
           </div>
         </header>
