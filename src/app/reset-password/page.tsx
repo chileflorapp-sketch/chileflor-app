@@ -14,15 +14,28 @@ export default function ResetPasswordPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    // Verificar si el usuario realmente llegó aquí con una sesión válida (producto del link del correo)
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        // Si no hay sesión, el link expiró o es inválido
-        setErrorMsg("El enlace de recuperación es inválido o ha expirado. Por favor, solicita uno nuevo en la página de login.");
+    // Verificar sesión o intercambiar código PKCE
+    const processAuth = async () => {
+      // 1. Verificar si hay un "code" en la URL (Flujo PKCE estándar de Supabase)
+      const code = new URLSearchParams(window.location.search).get('code');
+      
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          setErrorMsg("El enlace de recuperación es inválido o ha expirado.");
+          return;
+        }
+        // Limpiamos el código de la URL para que no quede visible
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else {
+        // 2. Si no hay código, verificamos si de alguna forma ya hay sesión
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          setErrorMsg("No hay una sesión de recuperación activa. El enlace puede haber expirado.");
+        }
       }
     };
-    checkSession();
+    processAuth();
   }, []);
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
