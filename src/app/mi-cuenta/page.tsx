@@ -16,17 +16,29 @@ export default function MiCuenta() {
   const [fetchingOrders, setFetchingOrders] = useState(false);
 
   useEffect(() => {
-    // Evitar race condition: si loading termina pero no hay user en el contexto, 
-    // verificamos directamente con Supabase antes de echarlo a login.
-    if (!loading && !user) {
-      const verify = async () => {
+    // Verificamos si venimos de un Magic Link (con parámetro code)
+    const code = new URLSearchParams(window.location.search).get('code');
+
+    const verify = async () => {
+      if (code) {
+        // Intercambiar código PKCE por sesión
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!error) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          return; // La sesión se creó, el onAuthStateChange del contexto tomará el control
+        }
+      }
+
+      // Evitar race condition: verificamos directamente con Supabase antes de echarlo a login.
+      if (!loading && !user) {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           router.push('/mi-cuenta/login');
         }
-      };
-      verify();
-    }
+      }
+    };
+
+    verify();
   }, [user, loading, router]);
 
   useEffect(() => {
