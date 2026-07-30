@@ -34,7 +34,8 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Proteger la ruta /mi-cuenta
+  // Proteger la ruta /mi-cuenta (DESHABILITADO PARA CLUB VIP LOCAL)
+  /*
   if (
     !user &&
     request.nextUrl.pathname.startsWith('/mi-cuenta')
@@ -44,6 +45,7 @@ export async function updateSession(request: NextRequest) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
+  */
 
   // Redirigir a los usuarios logueados lejos de /login o /registro si ya están autenticados
   if (

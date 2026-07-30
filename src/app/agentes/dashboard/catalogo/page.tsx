@@ -8,10 +8,13 @@ export default function CatalogoManagement() {
   const { agent } = useAgentAuth();
   const [catalogo, setCatalogo] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [searchTermProducts, setSearchTermProducts] = useState('');
   
   const [categories, setCategories] = useState<any[]>([]);
   const [configData, setConfigData] = useState<any>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
+  const [bulkPriceStatus, setBulkPriceStatus] = useState<'idle'|'saving'|'success'|'error'>('idle');
   const [newCatName, setNewCatName] = useState('');
   const [newSubcatName, setNewSubcatName] = useState('');
   const [selectedCatForSub, setSelectedCatForSub] = useState('');
@@ -34,6 +37,11 @@ export default function CatalogoManagement() {
   const [editMetaDescription, setEditMetaDescription] = useState('');
   const [editMetaKeywords, setEditMetaKeywords] = useState('');
   const [editSlug, setEditSlug] = useState('');
+  
+  // Regla de Oro Visual local states
+  const [editFondo, setEditFondo] = useState('neutro');
+  const [editAngulo, setEditAngulo] = useState('frontal');
+  const [editLuz, setEditLuz] = useState('estudio');
   
   const COLORS = ['Rojas', 'Blancas', 'Rosadas', 'Amarillas', 'Naranjas', 'Moradas'];
   
@@ -104,6 +112,49 @@ export default function CatalogoManagement() {
     setNewSubcatName('');
   };
 
+  const handleBulkPriceUpdate = async (percentage: number) => {
+    if (!canEditPrice) {
+      showToast('No tienes permisos para editar precios.');
+      return;
+    }
+    const actionText = percentage > 0 ? `SUBIR todos los precios un ${percentage}%` : `BAJAR todos los precios un ${Math.abs(percentage)}%`;
+    if (!confirm(`¿Estás COMPLETAMENTE SEGURO de querer ${actionText}? Esta acción afectará a todos los productos del catálogo al instante.`)) return;
+    
+    setBulkPriceStatus('saving');
+    try {
+      const res = await fetch('/api/catalogo/bulk-price', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ percentage })
+      });
+      if (res.ok) {
+        showToast(`¡Precios actualizados exitosamente! (${actionText})`);
+        
+        // Refrescar el catálogo
+        const updatedCatRes = await fetch('/api/catalogo');
+        const data = await updatedCatRes.json();
+        setCatalogo(data);
+        
+        // Actualizar el precio del producto seleccionado en el editor si hay uno
+        if (selectedProduct && selectedProduct !== 'new') {
+           const p = data.find((x: any) => x.id === selectedProduct);
+           if (p) setEditPrecio(p.precio_base);
+        }
+        
+        setBulkPriceStatus('success');
+        setTimeout(() => setShowBulkPriceModal(false), 1000);
+      } else {
+        showToast('Error al actualizar precios masivamente.');
+        setBulkPriceStatus('error');
+      }
+    } catch (error) {
+      showToast('Error de red al actualizar precios.');
+      setBulkPriceStatus('error');
+    } finally {
+      setTimeout(() => setBulkPriceStatus('idle'), 3000);
+    }
+  };
+
   // Sincronizar editor cuando cambia el producto seleccionado
   useEffect(() => {
     if (selectedProduct) {
@@ -126,6 +177,11 @@ export default function CatalogoManagement() {
         setEditMetaDescription(p.meta_description || '');
         setEditMetaKeywords(p.meta_keywords || '');
         setEditSlug(p.slug || (p.nombre ? p.nombre.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : ''));
+        
+        setEditFondo(p.tags_visuales?.fondo || 'neutro');
+        setEditAngulo(p.tags_visuales?.angulo || 'frontal');
+        setEditLuz(p.tags_visuales?.luz || 'estudio');
+        
         setNewColorInput('');
         setSaveStatus('idle');
       } else if (selectedProduct === 'new') {
@@ -140,6 +196,9 @@ export default function CatalogoManagement() {
         setEditSubcategorias([]);
         setEditCrossSell('');
         setEditColores([]);
+        setEditFondo('neutro');
+        setEditAngulo('frontal');
+        setEditLuz('estudio');
         setNewColorInput('');
         setSaveStatus('idle');
       }
@@ -173,7 +232,10 @@ export default function CatalogoManagement() {
           meta_keywords: editMetaKeywords || undefined,
           slug: editSlug || undefined,
           cross_sell: editCrossSell ? editCrossSell.split(',').map(s => s.trim()).filter(Boolean) : null,
-          colores: editColores.length > 0 ? editColores : undefined
+          colores: editColores.length > 0 ? editColores : undefined,
+          fondo: editFondo,
+          angulo: editAngulo,
+          luz: editLuz
         })
       });
       
@@ -189,9 +251,14 @@ export default function CatalogoManagement() {
         setTimeout(() => setSaveStatus('idle'), 3000);
       } else {
         setSaveStatus('error');
+        const errorData = await res.json().catch(() => ({}));
+        showToast(`Error al guardar: ${errorData.error || res.statusText || 'Desconocido'}`);
+        setTimeout(() => setSaveStatus('idle'), 3000);
       }
-    } catch (e) {
+    } catch (e: any) {
       setSaveStatus('error');
+      showToast(`Excepción al guardar: ${e.message}`);
+      setTimeout(() => setSaveStatus('idle'), 3000);
     }
   };
 
@@ -251,6 +318,12 @@ export default function CatalogoManagement() {
     setEditDescripcion(`Este hermoso arreglo floral de ${editNombre} ha sido preparado cuidadosamente por nuestros artesanos. Seleccionamos las mejores flores frescas para garantizar una experiencia visual y aromática inolvidable, ideal para sorprender en momentos especiales.`);
   };
 
+  const filteredCatalogo = catalogo.filter(p => 
+    p.nombre?.toLowerCase().includes(searchTermProducts.toLowerCase()) || 
+    p.categoria?.toLowerCase().includes(searchTermProducts.toLowerCase()) ||
+    p.subcategoria?.toLowerCase().includes(searchTermProducts.toLowerCase())
+  );
+
   return (
     <div className="animate-in fade-in duration-500 relative">
       {/* Toast Notification */}
@@ -267,6 +340,12 @@ export default function CatalogoManagement() {
         <div className="flex gap-3 items-center">
           {canEdit && (
             <>
+              <button 
+                onClick={() => setShowBulkPriceModal(true)}
+                className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-[0_4px_15px_rgba(249,115,22,0.3)] hover:scale-105 hover:shadow-[0_6px_20px_rgba(249,115,22,0.5)] transition-all active:scale-95 flex items-center gap-2"
+              >
+                <span>📈</span> Ajuste Precios
+              </button>
               <button 
                 onClick={() => setShowCategoryModal(true)}
                 className="bg-gradient-to-r from-fuchsia-600 to-pink-500 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-[0_4px_15px_rgba(236,72,153,0.3)] hover:scale-105 hover:shadow-[0_6px_20px_rgba(236,72,153,0.5)] transition-all active:scale-95 flex items-center gap-2"
@@ -293,11 +372,24 @@ export default function CatalogoManagement() {
         
         {/* Lista de Productos */}
         <div className="lg:col-span-2 bg-[#1C1C1E] border border-gray-800 rounded-3xl p-6 overflow-hidden flex flex-col h-[70vh]">
-          <h2 className="font-bold text-white mb-4">Catálogo Activo</h2>
+          <div className="flex justify-between items-center mb-4 gap-4">
+            <h2 className="font-bold text-white shrink-0">Catálogo Activo</h2>
+            <div className="relative flex-1 max-w-sm">
+              <input 
+                type="text" 
+                placeholder="Buscar por nombre, categoría..." 
+                value={searchTermProducts}
+                onChange={e => setSearchTermProducts(e.target.value)}
+                className="w-full bg-[#111111] border border-gray-800 rounded-xl px-4 py-2 text-sm text-white focus:border-primary outline-none"
+              />
+            </div>
+          </div>
           <div className="overflow-y-auto pr-2 space-y-3 flex-1">
             {catalogo.length === 0 ? (
               <div className="text-gray-500 text-sm text-center py-10">Cargando catálogo base de datos...</div>
-            ) : catalogo.map((p) => (
+            ) : filteredCatalogo.length === 0 ? (
+              <div className="text-gray-500 text-sm text-center py-10">No se encontraron productos para "{searchTermProducts}".</div>
+            ) : filteredCatalogo.map((p) => (
               <div 
                 key={p.id} 
                 onClick={() => setSelectedProduct(p.id)}
@@ -580,10 +672,49 @@ export default function CatalogoManagement() {
 
                 <div className="pt-6 border-t border-gray-800">
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Regla de Oro Visual Actual</h3>
-                  <div className="bg-[#1C1C1E] p-4 rounded-xl border border-gray-800 space-y-2 text-sm text-gray-300">
-                    <p><span className="text-gray-500">Fondo:</span> {catalogo.find(p => p.id === selectedProduct)?.tags_visuales.fondo}</p>
-                    <p><span className="text-gray-500">Ángulo:</span> {catalogo.find(p => p.id === selectedProduct)?.tags_visuales.angulo}</p>
-                    <p><span className="text-gray-500">Luz:</span> {catalogo.find(p => p.id === selectedProduct)?.tags_visuales.luz}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Fondo</label>
+                      <select 
+                        disabled={!canEdit} 
+                        value={editFondo}
+                        onChange={e => setEditFondo(e.target.value)}
+                        className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-primary outline-none disabled:opacity-50"
+                      >
+                        <option value="neutro">Neutro (Gris/Blanco)</option>
+                        <option value="oscuro">Oscuro (Elegante)</option>
+                        <option value="natural">Natural (Exterior/Jardín)</option>
+                        <option value="textura">Con Textura (Madera/Mármol)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Ángulo</label>
+                      <select 
+                        disabled={!canEdit} 
+                        value={editAngulo}
+                        onChange={e => setEditAngulo(e.target.value)}
+                        className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-primary outline-none disabled:opacity-50"
+                      >
+                        <option value="frontal">Frontal</option>
+                        <option value="cenital">Cenital (Desde arriba)</option>
+                        <option value="picado">Picado (Inclinado)</option>
+                        <option value="detalle">Detalle (Macro)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Luz</label>
+                      <select 
+                        disabled={!canEdit} 
+                        value={editLuz}
+                        onChange={e => setEditLuz(e.target.value)}
+                        className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-primary outline-none disabled:opacity-50"
+                      >
+                        <option value="estudio">Estudio (Uniforme)</option>
+                        <option value="natural">Luz Natural</option>
+                        <option value="dramatica">Dramática (Contrastada)</option>
+                        <option value="calida">Cálida (Atardecer)</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -705,6 +836,59 @@ export default function CatalogoManagement() {
                 </div>
               </div>
             </div>
+            
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Price Modal */}
+      {showBulkPriceModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#1C1C1E] border border-gray-800 rounded-3xl p-6 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white">Ajuste Masivo de Precios</h2>
+              <button onClick={() => setShowBulkPriceModal(false)} className="text-gray-500 hover:text-white transition-colors">✕</button>
+            </div>
+            
+            <p className="text-sm text-gray-400 mb-6">Selecciona el porcentaje para subir o bajar el precio de <strong>TODOS</strong> los productos del catálogo al mismo tiempo de forma interna.</p>
+
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-xs font-bold text-green-500 uppercase tracking-widest mb-3">📈 Subir Precios (Inflación / Escasez)</h3>
+                <div className="flex flex-wrap gap-2">
+                  {[5, 10, 20, 30, 40, 50].map(pct => (
+                    <button 
+                      key={`up-${pct}`}
+                      onClick={() => handleBulkPriceUpdate(pct)}
+                      disabled={bulkPriceStatus === 'saving'}
+                      className="bg-green-500/10 border border-green-500/30 hover:bg-green-500 text-green-500 hover:text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+                    >
+                      +{pct}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-xs font-bold text-red-500 uppercase tracking-widest mb-3">📉 Bajar Precios (Oferta / Liquidación)</h3>
+                <div className="flex flex-wrap gap-2">
+                  {[-5, -10, -15, -20, -25].map(pct => (
+                    <button 
+                      key={`down-${pct}`}
+                      onClick={() => handleBulkPriceUpdate(pct)}
+                      disabled={bulkPriceStatus === 'saving'}
+                      className="bg-red-500/10 border border-red-500/30 hover:bg-red-500 text-red-500 hover:text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+                    >
+                      {pct}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            {bulkPriceStatus === 'saving' && (
+              <p className="text-center text-primary font-bold mt-6 animate-pulse">Actualizando toda la base de datos...</p>
+            )}
             
           </div>
         </div>

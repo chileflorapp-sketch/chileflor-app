@@ -2,7 +2,7 @@
 import { useCart } from '@/context/CartContext';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { Home, Store, Search, ShoppingCart, Truck } from 'lucide-react';
+import { Home, Store, Search, ShoppingCart, Crown } from 'lucide-react';
 import SearchOverlay from './SearchOverlay';
 
 export default function MobileNav() {
@@ -45,10 +45,10 @@ export default function MobileNav() {
           <span className="text-[10px] font-semibold text-primary mt-1">Buscar</span>
         </button>
 
-        {/* Seguimiento */}
-        <a href="/seguimiento" className={linkClass('/seguimiento')}>
-          <Truck size={20} className={isActive('/seguimiento') ? 'fill-primary/20' : ''} />
-          <span className="text-[10px] font-semibold">Seguimiento</span>
+        {/* Club VIP */}
+        <a href="/club" className={linkClass('/club')}>
+          <Crown size={20} className={isActive('/club') || isActive('/mi-cuenta') ? 'text-fuchsia-500 fill-fuchsia-500/20' : ''} />
+          <span className={`text-[10px] font-semibold ${isActive('/club') || isActive('/mi-cuenta') ? 'text-fuchsia-500' : ''}`}>VIP</span>
         </a>
 
         {/* Carrito */}

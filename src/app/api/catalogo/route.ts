@@ -11,15 +11,15 @@ export async function GET() {
     if (error) throw error;
     
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Supabase GET Error:', error);
-    return NextResponse.json({ error: 'Failed to read from Supabase' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to read from Supabase' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const { id, estado, badge, nombre, precio_base, imagen, descripcion, categoria, subcategoria, cross_sell, colores, galeria, tags, slug, meta_title, meta_description, meta_keywords } = await request.json();
+    const { id, estado, badge, nombre, precio_base, imagen, descripcion, categoria, subcategoria, cross_sell, colores, galeria, tags, slug, meta_title, meta_description, meta_keywords, fondo, angulo, luz } = await request.json();
 
     const updates: any = {};
     if (estado !== undefined) updates.estado = estado;
@@ -37,13 +37,16 @@ export async function POST(request: Request) {
     if (meta_description !== undefined) updates.meta_description = meta_description;
     if (meta_keywords !== undefined) updates.meta_keywords = meta_keywords;
 
-    if (colores !== undefined || galeria !== undefined) {
+    if (colores !== undefined || galeria !== undefined || fondo !== undefined || angulo !== undefined || luz !== undefined) {
       const { data: currentProduct } = await supabase.from('productos').select('tags_visuales').eq('id', id).single();
       updates.tags_visuales = {
         ...(currentProduct?.tags_visuales || { fondo: "neutro", angulo: "frontal", luz: "estudio" })
       };
       if (colores !== undefined) updates.tags_visuales.colores = colores;
       if (galeria !== undefined) updates.tags_visuales.galeria = galeria;
+      if (fondo !== undefined) updates.tags_visuales.fondo = fondo;
+      if (angulo !== undefined) updates.tags_visuales.angulo = angulo;
+      if (luz !== undefined) updates.tags_visuales.luz = luz;
     }
 
     const { data, error } = await supabase
@@ -56,9 +59,9 @@ export async function POST(request: Request) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, product: data });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Supabase POST Error:', error);
-    return NextResponse.json({ error: 'Failed to update Supabase' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to update Supabase', details: error }, { status: 500 });
   }
 }
 
@@ -76,7 +79,7 @@ export async function PUT(request: Request) {
     if (!newProduct.tags_visuales) newProduct.tags_visuales = { fondo: "neutro", angulo: "frontal", luz: "estudio" };
     if (!newProduct.estado) newProduct.estado = 'activo';
 
-    // Mover colores y galeria a tags_visuales si viene en el payload
+    // Mover colores, galeria y tags_visuales si viene en el payload
     if (newProduct.colores !== undefined) {
       newProduct.tags_visuales.colores = newProduct.colores;
       delete newProduct.colores;
@@ -84,6 +87,18 @@ export async function PUT(request: Request) {
     if (newProduct.galeria !== undefined) {
       newProduct.tags_visuales.galeria = newProduct.galeria;
       delete newProduct.galeria;
+    }
+    if (newProduct.fondo !== undefined) {
+      newProduct.tags_visuales.fondo = newProduct.fondo;
+      delete newProduct.fondo;
+    }
+    if (newProduct.angulo !== undefined) {
+      newProduct.tags_visuales.angulo = newProduct.angulo;
+      delete newProduct.angulo;
+    }
+    if (newProduct.luz !== undefined) {
+      newProduct.tags_visuales.luz = newProduct.luz;
+      delete newProduct.luz;
     }
 
     const { data, error } = await supabase
@@ -95,9 +110,9 @@ export async function PUT(request: Request) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, product: data });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Supabase PUT Error:', error);
-    return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to create product', details: error }, { status: 500 });
   }
 }
 
@@ -118,8 +133,8 @@ export async function DELETE(request: Request) {
     if (error) throw error;
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Supabase DELETE Error:', error);
-    return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to delete product', details: error }, { status: 500 });
   }
 }

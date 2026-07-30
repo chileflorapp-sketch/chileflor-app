@@ -11,7 +11,7 @@ export default function CheckoutPage() {
   const [isNightService, setIsNightService] = useState(false);
   const [loading, setLoading] = useState(false);
   const [comuna, setComuna] = useState('');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('mercadopago');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('flow');
   const [orderGenerated, setOrderGenerated] = useState<string | null>(null);
   
   // Datos del Comprador
@@ -160,7 +160,7 @@ export default function CheckoutPage() {
 
       const paymentNames: Record<string, string> = {
         transbank: 'Transbank / Red Compra',
-        mercadopago: 'Mercado Pago',
+        flow: 'Pago Online (Flow)',
         transferencia: 'Transferencia Bancaria',
         efectivo: 'Efectivo contra entrega'
       };
@@ -186,11 +186,32 @@ export default function CheckoutPage() {
         message += `💌 *Dedicatoria:* "${dedicatoriaMessage}"\n\n`;
       }
       
-      if (selectedPaymentMethod === 'mercadopago') {
-        message += `Me gustaría pagar mediante: *Mercado Pago*. Por favor, solicito me envíen el link de pago. ¡Nos gusta hacer las cosas bien!`;
-      } else {
-        message += `Me gustaría pagar mediante: *${paymentNames[selectedPaymentMethod]}*.`;
+      if (selectedPaymentMethod === 'flow') {
+        // Integración con Flow
+        try {
+          const res = await fetch('/api/flow/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId,
+              total,
+              email: emailComprador
+            })
+          });
+          const data = await res.json();
+          if (data.url) {
+            window.location.href = data.url;
+            return; // Termina la función aquí para que redirija
+          } else {
+            console.error("Error desde Flow API", data);
+            alert("No pudimos conectar con la pasarela de pago. Serás redirigido a WhatsApp.");
+          }
+        } catch (error) {
+          console.error("Error llamando a API Flow", error);
+        }
       }
+
+      message += `Me gustaría pagar mediante: *${paymentNames[selectedPaymentMethod] || 'otro medio'}*.`;
       
       const whatsappUrl = `https://wa.me/56979992848?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
@@ -547,24 +568,24 @@ export default function CheckoutPage() {
               </div>
               
               <div className="space-y-4 ml-11">
-                {/* MercadoPago - Opcion Principal */}
-                <label className={`relative cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl border-2 transition-all ${selectedPaymentMethod === 'mercadopago' ? 'border-[#009EE3] bg-[#009EE3]/[0.03]' : 'border-gray-100 hover:border-gray-300'}`}>
-                  <input type="radio" name="payment" value="mercadopago" checked={selectedPaymentMethod === 'mercadopago'} onChange={() => setSelectedPaymentMethod('mercadopago')} className="hidden" />
+                {/* Flow - Opcion Principal */}
+                <label className={`relative cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl border-2 transition-all ${selectedPaymentMethod === 'flow' ? 'border-[#009EE3] bg-[#009EE3]/[0.03]' : 'border-gray-100 hover:border-gray-300'}`}>
+                  <input type="radio" name="payment" value="flow" checked={selectedPaymentMethod === 'flow'} onChange={() => setSelectedPaymentMethod('flow')} className="hidden" />
                   
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center flex-shrink-0">
-                      <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icono-1024.png" alt="Mercado Pago" className="w-6 h-6 object-contain" />
+                      <CreditCard className="w-6 h-6 text-[#009EE3]" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="font-bold text-black">Mercado Pago</p>
+                        <p className="font-bold text-black">Pago Online</p>
                         <span className="bg-[#009EE3] text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest">Recomendado</span>
                       </div>
-                      <p className="text-xs text-gray-500 font-medium">Tarjetas de Crédito, Débito, Redcompra o Saldo.</p>
+                      <p className="text-xs text-gray-500 font-medium">Webpay Plus, MACH, Servipag y más.</p>
                     </div>
                   </div>
                   
-                  {selectedPaymentMethod === 'mercadopago' && (
+                  {selectedPaymentMethod === 'flow' && (
                     <div className="absolute right-5 top-1/2 -translate-y-1/2">
                       <div className="w-6 h-6 rounded-full bg-[#009EE3] flex items-center justify-center text-white">
                         <Check className="w-3.5 h-3.5" />

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import '../styles/logo-animation.css';
 import { useCart } from '@/context/CartContext';
-import { ShoppingCart, Search } from 'lucide-react';
+import { ShoppingCart, Search, Crown } from 'lucide-react';
 import SearchOverlay from './SearchOverlay';
 
 export default function Header() {
@@ -60,7 +60,6 @@ export default function Header() {
               <a href="/catalogo" className="hover:text-primary transition-colors">Catálogo</a>
               <a href="/cementerios" className="hover:text-primary transition-colors">Cementerios</a>
               <a href="/contacto" className="hover:text-primary transition-colors">Contacto</a>
-              <a href="/portal-mayorista/registro" className="hover:text-primary transition-colors">Mayoristas</a>
             </nav>
 
             <div className="flex gap-2 md:gap-4 items-center">
@@ -77,6 +76,19 @@ export default function Header() {
               >
                 <Search className="w-5 h-5" />
               </button>
+
+              <a 
+                href="/club"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider transition-all hover:scale-105 border ${
+                  isTransparent
+                    ? 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30 hover:bg-fuchsia-500/30'
+                    : 'bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200 hover:bg-fuchsia-200'
+                }`}
+                title="Club VIP & Mi Cuenta"
+              >
+                <Crown size={14} className={isTransparent ? "text-fuchsia-400" : "text-fuchsia-600"} />
+                <span className="hidden sm:inline">VIP</span>
+              </a>
 
               {/* Cart Button → opens drawer */}
               <button

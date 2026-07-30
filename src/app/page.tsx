@@ -3,6 +3,8 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import HeroSlider from '@/components/HeroSlider';
 import SubscriptionBanner from '@/components/SubscriptionBanner';
+import InfoSlider from '@/components/InfoSlider';
+import ExperienceBanner from '@/components/ExperienceBanner';
 import { Loader2, ShoppingBag, Star, ArrowRight, Truck, Shield, Clock, Sparkles, Heart, ChevronRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
@@ -609,101 +611,6 @@ function UrgencyBar({ config }: { config?: any }) {
       </div>
     </div>
   );
-}
-
-// ── Página Principal ──
-export default function HomePage() {
-  const { addToCart } = useCart();
-  const { toggleWishlist, isInWishlist } = useWishlist();
-  const [catalogoDB, setCatalogoDB] = useState<any[]>([]);
-  const [siteConfig, setSiteConfig] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<string>('todos');
-
-  useReveal();
-
-  useEffect(() => {
-    fetch('/api/catalogo')
-      .then(res => res.json())
-      .then(data => setCatalogoDB(data))
-      .catch(err => console.error(err));
-
-    fetch(`/api/config?t=${Date.now()}`, { cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => setSiteConfig(data))
-      .catch(err => console.error(err));
-  }, []);
-
-  if (!siteConfig) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 to-pink-50">
-        <div className="text-center">
-          <div className="text-5xl mb-4 animate-float">🌹</div>
-          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-          <p className="text-gray-400 mt-4 text-sm font-medium">Preparando tu experiencia floral...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const fontStyle = `
-    :root {
-      --font-heading: "${siteConfig.fonts?.heading || 'Inter'}", sans-serif;
-      --font-body: "${siteConfig.fonts?.body || 'Inter'}", sans-serif;
-    }
-    h1, h2, h3, h4, h5, h6, .font-serif {
-      font-family: var(--font-heading) !important;
-    }
-    body, p, span, a, div {
-      font-family: var(--font-body);
-    }
-  `;
-
-  // Filtrado de productos dinámico en la portada
-  const allProducts = (Array.isArray(catalogoDB) ? catalogoDB : []).filter(p => p?.estado !== 'fuera_de_temporada');
-
-  const filteredProducts = allProducts.filter(p => {
-    if (activeTab === 'todos') return true;
-    if (activeTab === 'rosas') return p.categoria === 'Flores' || p.nombre.toLowerCase().includes('rosa');
-    if (activeTab === 'ramos') return p.categoria === 'Ramos de Flores' || p.nombre.toLowerCase().includes('ramo');
-    if (activeTab === 'hoy') return p.badge?.includes('Entrega Hoy');
-    if (activeTab === 'regalos') return p.categoria === 'Regalos';
-    return true;
-  }).slice(0, 8);
-
-  return (
-    <div className="flex flex-col min-h-screen bg-gray-50/50">
-      <style dangerouslySetInnerHTML={{ __html: fontStyle }} />
-
-      {/* Hero Slider */}
-      <HeroSlider config={siteConfig.heroSlider} timings={siteConfig.timings} />
-
-      {/* Barra de urgencia */}
-      <UrgencyBar config={siteConfig.urgencyBar} />
-
-      {/* Accesos rápidos Estilo App */}
-      <QuickAppActions shortcuts={siteConfig.quickShortcuts} />
-
-      {/* Ticker de confianza */}
-      <TrustTicker items={siteConfig.trustTicker} />
-
-      {/* Categorías visuales */}
-      <CategoryGrid config={siteConfig.colecciones} />
-
-      {/* Promoción Raspe y Gana */}
-      <RaspeBanner />
-
-      {/* Por qué Chileflor */}
-      <WhyChileflor />
-
-      {/* Stats */}
-      <StatsBar />
-
-      {/* Catálogo Destacado Interactivo estilo App */}
-      <section className="container mx-auto px-4 py-16 md:py-20 reveal">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
-          <div>
-            <p className="text-primary text-xs md:text-sm font-bold uppercase tracking-[0.3em] mb-2">Descubre y Compra</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Arreglos Destacados</h2>
             <p className="text-gray-500 mt-1 text-sm md:text-base">Selecciona tu categoría favorita para explorar.</p>
           </div>
 
