@@ -15,6 +15,8 @@ import { Plus_Jakarta_Sans } from 'next/font/google';
 import PremiumPreloader from '@/components/PremiumPreloader';
 import ScrollReveal from '@/components/ScrollReveal';
 import CartDrawer from '@/components/CartDrawer';
+import GoogleAnalytics from '@/components/GoogleAnalytics';
+import JsonLd from '@/components/JsonLd';
 
 const plusJakartaSans = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
@@ -47,6 +49,8 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${plusJakartaSans.variable}`}>
       <body className="font-sans antialiased bg-[#F8F9FA] pb-16 md:pb-0 flex flex-col min-h-screen">
+        <GoogleAnalytics />
+        <JsonLd />
         <div className="pollen-container" aria-hidden="true"></div>
         <PremiumPreloader />
         <ScrollReveal />

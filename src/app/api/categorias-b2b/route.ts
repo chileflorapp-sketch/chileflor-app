@@ -1,39 +1,26 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
-import { B2B_CATEGORIAS } from '@/data/catalog-b2b';
-
-const DB_FILE = path.join(process.cwd(), 'data', 'categorias_b2b.json');
-
-async function readDB() {
-  try {
-    const fileContent = await fs.readFile(DB_FILE, 'utf-8');
-    const data = JSON.parse(fileContent);
-    if (Array.isArray(data) && data.length > 0) {
-      return data;
-    }
-    return B2B_CATEGORIAS;
-  } catch (error) {
-    return B2B_CATEGORIAS;
-  }
-}
-
-async function writeDB(data: any) {
-  try {
-    await fs.mkdir(path.dirname(DB_FILE), { recursive: true });
-    await fs.writeFile(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (err) {
-    console.warn('Skipping local writeDB (likely Vercel environment):', err);
-  }
-}
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET() {
   try {
-    const data = await readDB();
-    return NextResponse.json(data);
+    const { data, error } = await supabaseAdmin
+      .from('categorias_b2b')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (error) {
+      console.error('Supabase GET Categorias B2B Error:', error.message);
+      // Fallback a categorías únicas desde la tabla de productos si la tabla no existe
+      if (error.code === '42P01') {
+        return NextResponse.json([]);
+      }
+      throw error;
+    }
+    
+    return NextResponse.json(data || []);
   } catch (error) {
     console.error('GET Categorias B2B Error:', error);
-    return NextResponse.json(B2B_CATEGORIAS);
+    return NextResponse.json([], { status: 500 });
   }
 }
 
@@ -41,17 +28,24 @@ export async function POST(request: Request) {
   try {
     const newCategory = await request.json();
     if (!newCategory.id) {
-      newCategory.id = `cat-${Date.now()}`;
+      newCategory.id = crypto.randomUUID();
     }
 
-    let data = await readDB();
-    data.push(newCategory);
-    await writeDB(data);
+    const { data, error } = await supabaseAdmin
+      .from('categorias_b2b')
+      .insert([newCategory])
+      .select()
+      .single();
 
-    return NextResponse.json({ success: true, categoria: newCategory });
-  } catch (error) {
+    if (error) {
+      console.error('Supabase Insert Error:', error);
+      return NextResponse.json({ error: error.message || 'Error de base de datos' }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true, categoria: data });
+  } catch (error: any) {
     console.error('POST Categorias B2B Error:', error);
-    return NextResponse.json({ error: 'Failed to create category' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to create category' }, { status: 500 });
   }
 }
 
@@ -64,9 +58,12 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    let data = await readDB();
-    data = data.filter((c: any) => c.id !== String(id) && c.nombre !== id);
-    await writeDB(data);
+    const { error } = await supabaseAdmin
+      .from('categorias_b2b')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error) {

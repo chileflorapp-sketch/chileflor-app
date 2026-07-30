@@ -15,31 +15,98 @@ function CatalogoContent() {
   const [searchInput, setSearchInput] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [catalogoDB, setCatalogoDB] = useState<any[]>([]);
+  const [dynamicCategories, setDynamicCategories] = useState<any[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
 
-  useEffect(() => {
-    fetch('/api/catalogo')
-      .then(res => res.json())
-      .then(data => { setCatalogoDB(Array.isArray(data) ? data : []); setLoadingCatalog(false); })
-      .catch(err => { console.error(err); setLoadingCatalog(false); });
+    useEffect(() => {
+    Promise.all([
+      fetch('/api/catalogo').then(res => res.json()).catch(() => []),
+      fetch('/api/config').then(res => res.json()).catch(() => null)
+    ]).then(([productsData, configData]) => {
+      const products = Array.isArray(productsData) ? productsData : [];
+      setCatalogoDB(products);
+      setLoadingCatalog(false);
+
+      let baseCats: any[] = [];
+      if (configData?.categorias && Array.isArray(configData.categorias) && configData.categorias.length > 0) {
+        baseCats = configData.categorias.map((c: any, index: number) => ({
+          id: c.id || index + 1,
+          nombre: c.nombre || c.name,
+          subcategorias: (c.subcategorias || []).map((sub: any, sIdx: number) => {
+            const subName = typeof sub === 'string' ? sub : (sub.nombre || sub.name || sub);
+            return { id: sub.id || sIdx + 1, nombre: subName };
+          })
+        }));
+      }
+
+      // Unir dinámicamente cualquier categoría y subcategoría presente en los productos de la BD
+      products.forEach((p: any) => {
+        let rawCats: string[] = [];
+        if (Array.isArray(p.categoria)) {
+          rawCats = p.categoria;
+        } else if (typeof p.categoria === 'string') {
+          rawCats = p.categoria.split(',').map((s: string) => s.trim()).filter(Boolean);
+        }
+
+        let rawSubs: string[] = [];
+        if (Array.isArray(p.subcategoria)) {
+          rawSubs = p.subcategoria;
+        } else if (typeof p.subcategoria === 'string') {
+          rawSubs = p.subcategoria.split(',').map((s: string) => s.trim()).filter(Boolean);
+        }
+
+        rawCats.forEach(catName => {
+          let catObj = baseCats.find(c => (c.nombre || c.name || '').toLowerCase().trim() === catName.toLowerCase().trim());
+          if (!catObj) {
+            catObj = { id: Date.now() + Math.random(), nombre: catName, subcategorias: [] };
+            baseCats.push(catObj);
+          }
+
+          rawSubs.forEach(subName => {
+            const subList = catObj.subcategorias || [];
+            const exists = subList.some((s: any) => {
+              const name = typeof s === 'string' ? s : (s.nombre || s.name || '');
+              return name.toLowerCase().trim() === subName.toLowerCase().trim();
+            });
+
+            if (!exists) {
+              catObj.subcategorias.push({ id: Date.now() + Math.random(), nombre: subName });
+            }
+          });
+        });
+      });
+
+      setDynamicCategories(baseCats);
+    });
   }, []);
 
   useEffect(() => {
     const cat = searchParams.get('cat');
-    if (cat && CATEGORIAS.some(c => c.nombre === cat)) {
+    if (cat) {
       setActiveCategory(cat);
-      setActiveSubcategory('Todas'); // Reset subcategory when category changes from URL
+      setActiveSubcategory('Todas');
     }
   }, [searchParams]);
+
+  const normalizeText = (text: string) => {
+    if (!text) return '';
+    return text
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim()
+      .replace(/ǧ/g, 'u'); // Fix specific Supabase/encoding corruption for 'ú'
+  };
 
   // Obtener subcategorías válidas según la categoría activa
   const currentSubcategories = useMemo(() => {
     if (activeCategory === 'Todos') return [];
-    const category = CATEGORIAS.find(c => c.nombre === activeCategory);
-    return category ? category.subcategorias.map(s => s.nombre) : [];
-  }, [activeCategory]);
+    const activeNorm = normalizeText(activeCategory);
+    const category = dynamicCategories.find(c => normalizeText(c.nombre || '') === activeNorm);
+    return category ? category.subcategorias.map((s: any) => s.nombre || s) : [];
+  }, [activeCategory, dynamicCategories]);
 
   const filteredProducts = useMemo(() => {
     if (!Array.isArray(catalogoDB) || catalogoDB.length === 0) return [];
@@ -50,23 +117,43 @@ function CatalogoContent() {
       return estado !== 'fuera_de_temporada' && estado !== 'inactivo';
     });
 
-    // Filtro Categoría Madre
+    // Filtro Categoría Madre (Soporta Selección Múltiple)
     if (activeCategory !== 'Todos') {
-      result = result.filter(p => p.categoria === activeCategory);
+      const activeCatNorm = normalizeText(activeCategory);
+      result = result.filter(p => {
+        if (!p.categoria) return false;
+        if (Array.isArray(p.categoria)) {
+          return p.categoria.some((c: string) => normalizeText(c) === activeCatNorm);
+        }
+        return p.categoria.split(',').map((s: string) => normalizeText(s)).includes(activeCatNorm);
+      });
     }
     
-    // Filtro Subcategoría
+    // Filtro Subcategoría (Soporta Selección Múltiple)
     if (activeSubcategory !== 'Todas' && activeCategory !== 'Todos') {
-      result = result.filter(p => p.subcategoria === activeSubcategory);
+      const activeSubNorm = normalizeText(activeSubcategory);
+      result = result.filter(p => {
+        if (!p.subcategoria) return false;
+        if (Array.isArray(p.subcategoria)) {
+          return p.subcategoria.some((s: string) => {
+            const sNorm = normalizeText(s);
+            return sNorm === activeSubNorm || sNorm.includes(activeSubNorm) || activeSubNorm.includes(sNorm);
+          });
+        }
+        return p.subcategoria.split(',').some((s: string) => {
+          const sNorm = normalizeText(s);
+          return sNorm === activeSubNorm || sNorm.includes(activeSubNorm) || activeSubNorm.includes(sNorm);
+        });
+      });
     }
 
     // Buscador Inteligente
     if (appliedSearch) {
-      const term = appliedSearch.toLowerCase().trim();
+      const term = normalizeText(appliedSearch);
       result = result.filter(p => {
-        return (p.nombre || '').toLowerCase().includes(term) || 
-               (p.categoria || '').toLowerCase().includes(term) ||
-               (p.subcategoria || '').toLowerCase().includes(term);
+        return normalizeText(p.nombre || '').includes(term) || 
+               normalizeText(p.categoria || '').includes(term) ||
+               normalizeText(p.subcategoria || '').includes(term);
       });
     }
 
@@ -130,11 +217,11 @@ function CatalogoContent() {
               >
                 Todas
               </button>
-              {CATEGORIAS.map((cat) => (
+              {dynamicCategories.map((cat) => (
                 <button
-                  key={cat.id}
+                  key={cat.id || cat.nombre}
                   onClick={() => { setActiveCategory(cat.nombre); setActiveSubcategory('Todas'); router.push(`/catalogo?cat=${encodeURIComponent(cat.nombre)}`); }}
-                  className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeCategory === cat.nombre ? 'bg-primary text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${activeCategory.toLowerCase() === (cat.nombre || '').toLowerCase() ? 'bg-primary text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}
                 >
                   {cat.nombre}
                 </button>
@@ -153,7 +240,7 @@ function CatalogoContent() {
                 >
                   Todo en {activeCategory}
                 </button>
-                {currentSubcategories.map((sub) => (
+                {currentSubcategories.map((sub: any) => (
                   <button
                     key={sub}
                     onClick={() => setActiveSubcategory(sub)}

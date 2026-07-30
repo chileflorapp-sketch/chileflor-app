@@ -147,11 +147,29 @@ const DEFAULT_CONFIG = {
       { emoji: '🌸', name: 'Día Madre', sub: 'Lo mejor para mamá', link: '/catalogo?cat=Día de la Madre', color: 'from-purple-900 to-violet-700', img: 'https://images.unsplash.com/photo-1487530811176-3780de880c2d?auto=format&fit=crop&w=800&q=80' }
     ]
   },
-  categorias: [
-    { id: 'flores', name: 'Flores', subcategorias: ['Ramos de Rosas', 'Girasoles', 'Primavera'] },
-    { id: 'regalos', name: 'Regalos', subcategorias: ['Chocolates', 'Globos', 'Peluches'] },
-    { id: 'plantas', name: 'Plantas', subcategorias: ['Interior', 'Exterior'] },
-    { id: 'condolencias', name: 'Condolencias', subcategorias: ['Coronas', 'Cojines', 'Cruces'] }
+  categorias: [],
+  urgencyBar: {
+    enabled: true,
+    badgeText: "⚡ Entrega hoy disponible",
+    countdownText: "Cierre de despacho hoy en:",
+    linkText: "Ver disponibles",
+    linkUrl: "/catalogo?badge=Entrega+Hoy",
+    hours: 5
+  },
+  quickShortcuts: [
+    { icon: '⚡', label: 'Entrega Hoy', link: '/catalogo?badge=Entrega+Hoy', badge: 'Hoy', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30' },
+    { icon: '🌹', label: 'Rosas', link: '/catalogo?cat=Flores', badge: '', color: 'bg-rose-500/10 text-rose-600 border-rose-500/30' },
+    { icon: '💐', label: 'Ramos', link: '/catalogo?cat=Ramos de Flores', badge: '', color: 'bg-pink-500/10 text-pink-600 border-pink-500/30' },
+    { icon: '💌', label: 'Tarjeta QR', link: '/dedicatoria/nueva', badge: 'Nuevo', color: 'bg-fuchsia-500/10 text-fuchsia-600 border-fuchsia-500/30' },
+    { icon: '📱', label: 'Escáner QR', link: '/escaner', badge: '', color: 'bg-purple-500/10 text-purple-600 border-purple-500/30' },
+    { icon: '🕊️', label: 'Homenajes', link: '/catalogo?cat=Homenajes', badge: '', color: 'bg-slate-500/10 text-slate-600 border-slate-500/30' },
+    { icon: '🎁', label: 'Regalos', link: '/catalogo?cat=Regalos', badge: '', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
+    { icon: '⛪', label: 'Cementerios', link: '/cementerios', badge: '', color: 'bg-amber-500/10 text-amber-600 border-amber-500/30' }
+  ],
+  trustTicker: [
+    '🌹 +12.000 ramos entregados', '⚡ Entrega el mismo día', '💳 Pago seguro 100%',
+    '🌿 Flores frescas garantizadas', '📦 Seguimiento en tiempo real', '❤️ Más de 5.000 clientes felices',
+    '🏆 La floristería N°1 de Chile', '🎁 Regalos personalizados con IA', '📸 Evidencia fotográfica en cada entrega'
   ]
 };
 
@@ -188,6 +206,9 @@ export async function GET() {
         valores: (Array.isArray(data.data.nosotros?.valores) && data.data.nosotros.valores.length > 0) ? data.data.nosotros.valores : DEFAULT_CONFIG.nosotros.valores,
       },
       categorias: (Array.isArray(data.data.categorias) && data.data.categorias.length > 0) ? data.data.categorias : DEFAULT_CONFIG.categorias,
+      urgencyBar: { ...DEFAULT_CONFIG.urgencyBar, ...(data.data.urgencyBar || {}) },
+      quickShortcuts: (Array.isArray(data.data.quickShortcuts) && data.data.quickShortcuts.length > 0) ? data.data.quickShortcuts : DEFAULT_CONFIG.quickShortcuts,
+      trustTicker: (Array.isArray(data.data.trustTicker) && data.data.trustTicker.length > 0) ? data.data.trustTicker : DEFAULT_CONFIG.trustTicker,
       colecciones: {
         ...DEFAULT_CONFIG.colecciones,
         ...(data.data.colecciones || {}),

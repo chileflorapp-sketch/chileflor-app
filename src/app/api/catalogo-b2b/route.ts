@@ -1,42 +1,30 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
-import { CATALOGO_B2B } from '@/data/catalog-b2b';
-
-const DB_FILE = path.join(process.cwd(), 'data', 'productos_b2b.json');
-
-async function readDB() {
-  try {
-    const fileContent = await fs.readFile(DB_FILE, 'utf-8');
-    const data = JSON.parse(fileContent);
-    if (Array.isArray(data) && data.length > 0) {
-      // Merge with initial defaults if custom array is small
-      const existingIds = new Set(data.map((p: any) => p.id));
-      const defaultsToAdd = CATALOGO_B2B.filter(p => !existingIds.has(p.id));
-      return [...data, ...defaultsToAdd];
-    }
-    return CATALOGO_B2B;
-  } catch (error) {
-    return CATALOGO_B2B;
-  }
-}
-
-async function writeDB(data: any) {
-  try {
-    await fs.mkdir(path.dirname(DB_FILE), { recursive: true });
-    await fs.writeFile(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (err) {
-    console.warn('Skipping local writeDB (likely Vercel environment):', err);
-  }
-}
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function GET() {
   try {
-    const data = await readDB();
-    return NextResponse.json(data);
+    const { data, error } = await supabaseAdmin
+      .from('productos_b2b')
+      .select('*')
+      .order('id', { ascending: false });
+
+    if (error) {
+      console.error('Supabase GET Productos B2B Error:', error.message);
+      // Intentar fallback a tabla productos filtrando por mayorista si productos_b2b no existe
+      if (error.code === '42P01') { 
+         const { data: fallbackData, error: fallbackError } = await supabaseAdmin
+          .from('productos')
+          .select('*')
+          .eq('es_mayorista', true);
+         if (!fallbackError) return NextResponse.json(fallbackData);
+      }
+      throw error;
+    }
+    
+    return NextResponse.json(data || []);
   } catch (error) {
     console.error('GET Productos B2B Error:', error);
-    return NextResponse.json(CATALOGO_B2B);
+    return NextResponse.json([], { status: 500 });
   }
 }
 
@@ -46,19 +34,20 @@ export async function POST(request: Request) {
     const id = updates.id;
     delete updates.id;
 
-    let data = await readDB();
-    let productIndex = data.findIndex((p: any) => p.id === id);
-    
-    if (productIndex !== -1) {
-      data[productIndex] = { ...data[productIndex], ...updates };
-      await writeDB(data);
-      return NextResponse.json({ success: true, product: data[productIndex] });
-    } else {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-    }
+    const { data, error } = await supabaseAdmin
+      .from('productos_b2b')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, product: data });
   } catch (error) {
     console.error('POST Productos B2B Error:', error);
-    return NextResponse.json({ error: 'Failed to update data' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : (error as any).message || 'Failed to update data';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
@@ -67,17 +56,22 @@ export async function PUT(request: Request) {
     const newProduct = await request.json();
     
     if (!newProduct.id) {
-      newProduct.id = `b2b-${Date.now()}`;
+      newProduct.id = crypto.randomUUID();
     }
 
-    let data = await readDB();
-    data.push(newProduct);
-    await writeDB(data);
+    const { data, error } = await supabaseAdmin
+      .from('productos_b2b')
+      .insert([newProduct])
+      .select()
+      .single();
 
-    return NextResponse.json({ success: true, product: newProduct });
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, product: data });
   } catch (error) {
     console.error('PUT Productos B2B Error:', error);
-    return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
+    const msg = error instanceof Error ? error.message : (error as any).message || 'Failed to create product';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
@@ -90,9 +84,12 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    let data = await readDB();
-    data = data.filter((p: any) => p.id !== id);
-    await writeDB(data);
+    const { error } = await supabaseAdmin
+      .from('productos_b2b')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error) {

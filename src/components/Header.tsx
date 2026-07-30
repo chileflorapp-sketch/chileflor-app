@@ -2,9 +2,8 @@
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import '../styles/logo-animation.css';
-import { createClient } from '@/utils/supabase/client';
 import { useCart } from '@/context/CartContext';
-import { ShoppingCart, Search, User } from 'lucide-react';
+import { ShoppingCart, Search } from 'lucide-react';
 import SearchOverlay from './SearchOverlay';
 
 export default function Header() {
@@ -13,7 +12,6 @@ export default function Header() {
 
   const isHome = pathname === '/';
   const [scrolled, setScrolled] = useState(false);
-  const [userName, setUserName] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   
@@ -24,17 +22,6 @@ export default function Header() {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     
-    const supabase = createClient();
-    const checkUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data.user) setUserName(data.user.user_metadata?.full_name || data.user.email);
-    };
-    checkUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUserName(session?.user ? (session.user.user_metadata?.full_name || session.user.email) : null);
-    });
-
     // Keyboard shortcut: Ctrl+K or Cmd+K opens search
     const handleKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -47,7 +34,6 @@ export default function Header() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('keydown', handleKey);
-      authListener.subscription.unsubscribe();
     };
   }, []);
 
@@ -73,7 +59,7 @@ export default function Header() {
             <nav className={`hidden md:flex gap-8 font-semibold text-[13px] tracking-wide uppercase ${isTransparent ? 'text-white/90' : 'text-gray-600'}`}>
               <a href="/catalogo" className="hover:text-primary transition-colors">Catálogo</a>
               <a href="/cementerios" className="hover:text-primary transition-colors">Cementerios</a>
-              <a href="/club" className="hover:text-primary transition-colors flex items-center gap-1.5"><span className="text-base leading-none">🎁</span> Club Chileflor</a>
+              <a href="/contacto" className="hover:text-primary transition-colors">Contacto</a>
               <a href="/portal-mayorista/registro" className="hover:text-primary transition-colors">Mayoristas</a>
             </nav>
 
@@ -108,17 +94,6 @@ export default function Header() {
                 )}
               </button>
 
-              {/* User / Login */}
-              <a
-                href={userName ? "/mi-cuenta" : "/mi-cuenta/login"}
-                className={`relative cursor-pointer hover:scale-110 active:scale-95 transition-transform flex items-center p-2 rounded-full ${
-                  isTransparent ? 'text-white hover:bg-white/10' : 'text-gray-800 hover:bg-gray-100'
-                }`}
-                aria-label="Mi Cuenta"
-                title={userName ? `Hola, ${userName.split(' ')[0]}` : "Ingresar a mi cuenta"}
-              >
-                <User className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
-              </a>
             </div>
           </div>
         </header>

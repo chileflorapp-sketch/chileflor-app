@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAgentAuth } from '@/context/AgentAuthContext';
-import { createClient } from '@/utils/supabase/client';
+import { supabase } from '@/lib/supabase';
 
 export default function CatalogoManagement() {
   const { agent } = useAgentAuth();
@@ -24,13 +24,16 @@ export default function CatalogoManagement() {
   const [editImagen, setEditImagen] = useState<string>('');
   const [editGaleria, setEditGaleria] = useState<string[]>([]);
   const [editDescripcion, setEditDescripcion] = useState<string>('');
-  const [editCategoria, setEditCategoria] = useState<string>('');
-  const [editSubcategoria, setEditSubcategoria] = useState<string>('');
+  const [editCategorias, setEditCategorias] = useState<string[]>([]);
+  const [editSubcategorias, setEditSubcategorias] = useState<string[]>([]);
   const [editCrossSell, setEditCrossSell] = useState<string>('');
   const [editColores, setEditColores] = useState<string[]>([]);
   const [newColorInput, setNewColorInput] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
-  const supabase = createClient();
+  const [editMetaTitle, setEditMetaTitle] = useState('');
+  const [editMetaDescription, setEditMetaDescription] = useState('');
+  const [editMetaKeywords, setEditMetaKeywords] = useState('');
+  const [editSlug, setEditSlug] = useState('');
   
   const COLORS = ['Rojas', 'Blancas', 'Rosadas', 'Amarillas', 'Naranjas', 'Moradas'];
   
@@ -113,10 +116,16 @@ export default function CatalogoManagement() {
         setEditImagen(p.imagen || '');
         setEditGaleria(p.tags_visuales?.galeria || (p.imagen ? [p.imagen] : []));
         setEditDescripcion(p.descripcion || '');
-        setEditCategoria(p.categoria || '');
-        setEditSubcategoria(p.subcategoria || '');
+        const catArray = Array.isArray(p.categoria) ? p.categoria : (p.categoria ? p.categoria.split(',').map((s: string) => s.trim()).filter(Boolean) : []);
+        const subArray = Array.isArray(p.subcategoria) ? p.subcategoria : (p.subcategoria ? p.subcategoria.split(',').map((s: string) => s.trim()).filter(Boolean) : []);
+        setEditCategorias(catArray);
+        setEditSubcategorias(subArray);
         setEditCrossSell(p.cross_sell ? p.cross_sell.join(', ') : '');
         setEditColores(p.tags_visuales?.colores || []);
+        setEditMetaTitle(p.meta_title || '');
+        setEditMetaDescription(p.meta_description || '');
+        setEditMetaKeywords(p.meta_keywords || '');
+        setEditSlug(p.slug || (p.nombre ? p.nombre.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') : ''));
         setNewColorInput('');
         setSaveStatus('idle');
       } else if (selectedProduct === 'new') {
@@ -127,8 +136,8 @@ export default function CatalogoManagement() {
         setEditImagen('');
         setEditGaleria([]);
         setEditDescripcion('');
-        setEditCategoria('Flores');
-        setEditSubcategoria('');
+        setEditCategorias(['Flores']);
+        setEditSubcategorias([]);
         setEditCrossSell('');
         setEditColores([]);
         setNewColorInput('');
@@ -157,8 +166,12 @@ export default function CatalogoManagement() {
           imagen: editGaleria.length > 0 ? editGaleria[0] : '', // sync primary image
           galeria: editGaleria.length > 0 ? editGaleria : undefined,
           descripcion: editDescripcion,
-          categoria: editCategoria,
-          subcategoria: editSubcategoria,
+          categoria: editCategorias.join(', '),
+          subcategoria: editSubcategorias.join(', '),
+          meta_title: editMetaTitle || undefined,
+          meta_description: editMetaDescription || undefined,
+          meta_keywords: editMetaKeywords || undefined,
+          slug: editSlug || undefined,
           cross_sell: editCrossSell ? editCrossSell.split(',').map(s => s.trim()).filter(Boolean) : null,
           colores: editColores.length > 0 ? editColores : undefined
         })
@@ -324,37 +337,75 @@ export default function CatalogoManagement() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Categorías Madres y Subcategorías Multi-Selección */}
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Categoría Madre</label>
-                    <select 
-                      disabled={!canEdit} 
-                      value={editCategoria}
-                      onChange={e => {
-                        setEditCategoria(e.target.value);
-                        setEditSubcategoria('');
-                      }}
-                      className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-primary outline-none disabled:opacity-50"
-                    >
-                      <option value="">Selecciona...</option>
-                      {categories.map((c, idx) => (
-                        <option key={idx} value={c.name}>{c.name}</option>
-                      ))}
-                    </select>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Categorías Madres (Selección Múltiple)
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {categories.map((c, idx) => {
+                        const catName = c.name || c.nombre;
+                        const isSelected = editCategorias.includes(catName);
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            disabled={!canEdit}
+                            onClick={() => {
+                              if (isSelected) {
+                                setEditCategorias(editCategorias.filter((x: string) => x !== catName));
+                              } else {
+                                setEditCategorias([...editCategorias, catName]);
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                              isSelected 
+                                ? 'bg-fuchsia-600 border-fuchsia-500 text-white shadow-md' 
+                                : 'bg-[#1C1C1E] border-gray-800 text-gray-400 hover:border-gray-600'
+                            }`}
+                          >
+                            {catName} {isSelected && '✓'}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
+
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Subcategoría</label>
-                    <select 
-                      disabled={!canEdit || !editCategoria} 
-                      value={editSubcategoria}
-                      onChange={e => setEditSubcategoria(e.target.value)}
-                      className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-primary outline-none disabled:opacity-50"
-                    >
-                      <option value="">Selecciona...</option>
-                      {categories.find(c => c.name === editCategoria)?.subcategorias?.map((sub: string, idx: number) => (
-                        <option key={idx} value={sub}>{sub}</option>
-                      ))}
-                    </select>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                      Subcategorías / Colecciones (Selección Múltiple)
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {Array.from(new Set(
+                        categories
+                          .filter(c => editCategorias.length === 0 || editCategorias.includes(c.name || c.nombre))
+                          .flatMap(c => (c.subcategorias || []).map((s: any) => typeof s === 'string' ? s : s.nombre))
+                      )).map((sub: any, idx: number) => {
+                        const isSelected = editSubcategorias.includes(sub);
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            disabled={!canEdit}
+                            onClick={() => {
+                              if (isSelected) {
+                                setEditSubcategorias(editSubcategorias.filter((x: string) => x !== sub));
+                              } else {
+                                setEditSubcategorias([...editSubcategorias, sub]);
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                              isSelected 
+                                ? 'bg-purple-600 border-purple-500 text-white shadow-md' 
+                                : 'bg-[#1C1C1E] border-gray-800 text-gray-400 hover:border-gray-600'
+                            }`}
+                          >
+                            {sub} {isSelected && '✓'}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 

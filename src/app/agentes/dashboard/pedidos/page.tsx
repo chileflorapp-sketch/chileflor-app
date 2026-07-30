@@ -457,7 +457,7 @@ export default function PedidosManagement() {
                           <p>Giro: VENTA DE FLORES E INSUMOS, PRODUCCIÓN Y</p>
                           <p>DISTRIBUCIÓN DE MATERIAS PRIMAS FLORALES</p>
                           <p className="mt-1">DIRECCIÓN: AV. LAS FLORES 123 - SANTIAGO</p>
-                          <p className="mt-1">eMail: contacto@chileflor.cl   Teléfono: +569 1234 5678</p>
+                          <p className="mt-1">eMail: chileflor.app@gmail.com   Teléfono: +569 1234 5678</p>
                         </div>
                       </div>
                     </div>
@@ -592,13 +592,12 @@ export default function PedidosManagement() {
                 </>
               ) : (
                 /* FORMATO DE IMPRESIÓN TARJETA */
-                tarjetaDigital && (
+                selectedOrder.dbData?.detalles?.dedicatoria && (
                   <div className="w-[10cm] h-[15cm] mx-auto relative overflow-hidden" style={{ pageBreakInside: 'avoid' }}>
-                    <img src={tarjetaDigital.image_url} className="absolute inset-0 w-full h-full object-cover z-0" alt="Fondo Tarjeta" />
-                    <div className="absolute inset-0 bg-black/40 z-0"></div>
-                    <div className="relative z-10 flex flex-col justify-center items-center h-full p-8 text-center text-white">
-                      <p className="whitespace-pre-wrap font-serif" style={{ fontSize: '20px', lineHeight: '1.5', textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
-                        {tarjetaDigital.message}
+                    <div className="absolute inset-0 bg-white z-0"></div>
+                    <div className="relative z-10 flex flex-col justify-center items-center h-full p-8 text-center text-black">
+                      <p className="whitespace-pre-wrap font-serif" style={{ fontSize: '20px', lineHeight: '1.5' }}>
+                        {selectedOrder.dbData.detalles.dedicatoria}
                       </p>
                     </div>
                   </div>
@@ -773,39 +772,30 @@ export default function PedidosManagement() {
                 </div>
               </div>
 
-              {/* Módulo de Tarjeta Digital */}
-              {tarjetaDigital && (
-                <div className="print:hidden border border-gray-800 rounded-2xl p-4 bg-[#111111] mx-8 mb-6 mt-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <p className="text-xs text-gray-500 uppercase tracking-widest font-bold flex items-center gap-2">
-                      <span>💌</span> Tarjeta Digital (Dedicatoria)
-                    </p>
-                    <button onClick={() => setIsEditingTarjeta(!isEditingTarjeta)} className="text-xs text-primary hover:text-white transition-colors">
-                      {isEditingTarjeta ? 'Cancelar' : '✏️ Editar'}
-                    </button>
+              {/* Módulo de Dedicatoria */}
+              {selectedOrder.dbData?.detalles?.dedicatoria && (
+                <div className="print:hidden border border-gray-800 rounded-2xl p-4 bg-[#111111] mx-8 mb-6 mt-6 relative overflow-hidden">
+                  <div className="absolute right-0 top-0 p-4 opacity-5">
+                    <span className="text-8xl">💌</span>
                   </div>
-                  
-                  <div className="flex flex-col sm:flex-row gap-6">
-                    <div className="w-32 shrink-0 aspect-[3/4] relative rounded-lg overflow-hidden border border-gray-700 shadow-md">
-                      <img src={tarjetaDigital.image_url} className="absolute inset-0 w-full h-full object-cover" />
+                  <div className="relative z-10">
+                    <div className="flex justify-between items-center mb-3">
+                      <p className="text-xs text-gray-500 uppercase tracking-widest font-bold flex items-center gap-2">
+                        <span>💌</span> Mensaje de Dedicatoria
+                      </p>
+                      <button 
+                        onClick={() => navigator.clipboard.writeText(selectedOrder.dbData.detalles.dedicatoria)}
+                        className="text-xs font-bold bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg transition-colors border border-white/10"
+                      >
+                        Copiar Texto
+                      </button>
                     </div>
-                    
-                    <div className="flex-1 flex flex-col justify-center">
-                      {isEditingTarjeta ? (
-                        <>
-                          <textarea 
-                            value={tarjetaMessage}
-                            onChange={(e) => setTarjetaMessage(e.target.value)}
-                            className="w-full h-32 bg-[#1A1A1D] border border-gray-700 rounded-lg p-3 text-sm text-white focus:border-primary outline-none resize-none mb-3"
-                          />
-                          <button onClick={handleSaveTarjeta} className="self-end bg-primary hover:bg-fuchsia-600 text-white font-bold py-2 px-6 rounded-lg text-sm transition-colors">Guardar Mensaje</button>
-                        </>
-                      ) : (
-                        <p className="text-white whitespace-pre-wrap italic bg-gray-900/50 p-4 rounded-xl border border-gray-800">
-                          "{tarjetaDigital.message}"
-                        </p>
-                      )}
-                    </div>
+                    <p className="text-white whitespace-pre-wrap font-serif text-lg leading-relaxed bg-gray-900/50 p-4 rounded-xl border border-gray-800">
+                      "{selectedOrder.dbData.detalles.dedicatoria}"
+                    </p>
+                    <p className="text-xs text-gray-500 mt-3 font-medium flex items-center gap-1">
+                      💡 Copia este mensaje para pegarlo en Canva y generar la tarjeta final para el cliente.
+                    </p>
                   </div>
                 </div>
               )}

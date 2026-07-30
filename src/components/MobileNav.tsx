@@ -2,7 +2,7 @@
 import { useCart } from '@/context/CartContext';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { Home, Store, Gift, ShoppingCart, User, Search } from 'lucide-react';
+import { Home, Store, Search, ShoppingCart, Truck } from 'lucide-react';
 import SearchOverlay from './SearchOverlay';
 
 export default function MobileNav() {
@@ -13,11 +13,11 @@ export default function MobileNav() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  if (pathname.startsWith('/agentes')) return null;
+  if (pathname?.startsWith('/agentes')) return null;
 
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
-    return pathname.startsWith(path);
+    return pathname?.startsWith(path);
   };
 
   const linkClass = (path: string) =>
@@ -37,21 +37,21 @@ export default function MobileNav() {
           <span className="text-[10px] font-semibold">Catálogo</span>
         </a>
 
-        {/* Centro: Club Chileflor */}
-        <a href="/club" className="flex flex-col items-center -mt-5">
-          <div className={`w-13 h-13 p-3.5 rounded-full flex items-center justify-center shadow-lg transition-all ${isActive('/club') ? 'bg-primary-dark shadow-primary/40' : 'bg-primary shadow-primary/30'}`}>
-            <Gift size={22} className="text-white" />
+        {/* Centro: Buscar (Botón Flotante) */}
+        <button onClick={() => setSearchOpen(true)} className="flex flex-col items-center -mt-5">
+          <div className="w-12 h-12 p-3 rounded-full flex items-center justify-center shadow-lg transition-all bg-primary shadow-primary/30 hover:scale-105 active:scale-95">
+            <Search size={22} className="text-white" />
           </div>
-          <span className="text-[10px] font-semibold text-primary mt-1">Club</span>
+          <span className="text-[10px] font-semibold text-primary mt-1">Buscar</span>
+        </button>
+
+        {/* Seguimiento */}
+        <a href="/seguimiento" className={linkClass('/seguimiento')}>
+          <Truck size={20} className={isActive('/seguimiento') ? 'fill-primary/20' : ''} />
+          <span className="text-[10px] font-semibold">Seguimiento</span>
         </a>
 
-        {/* Cuenta */}
-        <a href="/mi-cuenta" className={linkClass('/mi-cuenta')}>
-          <User size={20} className={isActive('/mi-cuenta') ? 'fill-primary/20' : ''} />
-          <span className="text-[10px] font-semibold">Cuenta</span>
-        </a>
-
-        {/* Carrito → abre drawer */}
+        {/* Carrito */}
         <button onClick={openCart} className={`flex flex-col items-center gap-0.5 relative transition-colors ${isActive('/checkout') ? 'text-primary' : 'text-gray-400'}`}>
           <ShoppingCart size={20} />
           <span className="text-[10px] font-semibold">Carrito</span>

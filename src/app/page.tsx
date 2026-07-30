@@ -21,13 +21,14 @@ function useReveal() {
 }
 
 // ── Componente: Ticker de confianza ──
-function TrustTicker() {
-  const items = [
+function TrustTicker({ items }: { items?: string[] }) {
+  const defaultItems = [
     '🌹 +12.000 ramos entregados', '⚡ Entrega el mismo día', '💳 Pago seguro 100%',
     '🌿 Flores frescas garantizadas', '📦 Seguimiento en tiempo real', '❤️ Más de 5.000 clientes felices',
     '🏆 La floristería N°1 de Chile', '🎁 Regalos personalizados con IA', '📸 Evidencia fotográfica en cada entrega',
   ];
-  const doubled = [...items, ...items];
+  const list = (Array.isArray(items) && items.length > 0) ? items : defaultItems;
+  const doubled = [...list, ...list];
 
   return (
     <div className="bg-gray-900 text-white py-3 overflow-hidden border-y border-gray-800 relative z-20">
@@ -428,27 +429,28 @@ function RaspeBanner() {
 }
 
 // ── Componente: Quick App Actions (Accesos Rápidos Estilo App) ──
-const APP_SHORTCUTS = [
-  { icon: '⚡', label: 'Entrega Hoy', link: '/catalogo?badge=Entrega+Hoy', badge: 'Hoy', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30' },
-  { icon: '🌹', label: 'Rosas', link: '/catalogo?cat=Flores', color: 'bg-rose-500/10 text-rose-600 border-rose-500/30' },
-  { icon: '💐', label: 'Ramos', link: '/catalogo?cat=Ramos de Flores', color: 'bg-pink-500/10 text-pink-600 border-pink-500/30' },
-  { icon: '💌', label: 'Tarjeta QR', link: '/dedicatoria/nueva', badge: 'Nuevo', color: 'bg-fuchsia-500/10 text-fuchsia-600 border-fuchsia-500/30' },
-  { icon: '📱', label: 'Escáner QR', link: '/escaner', color: 'bg-purple-500/10 text-purple-600 border-purple-500/30' },
-  { icon: '🕊️', label: 'Homenajes', link: '/catalogo?cat=Homenajes', color: 'bg-slate-500/10 text-slate-600 border-slate-500/30' },
-  { icon: '🎁', label: 'Regalos', link: '/catalogo?cat=Regalos', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
-  { icon: '⛪', label: 'Cementerios', link: '/cementerios', color: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
-];
+function QuickAppActions({ shortcuts }: { shortcuts?: any[] }) {
+  const defaultShortcuts = [
+    { icon: '⚡', label: 'Entrega Hoy', link: '/catalogo?badge=Entrega+Hoy', badge: 'Hoy', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30' },
+    { icon: '🌹', label: 'Rosas', link: '/catalogo?cat=Flores', color: 'bg-rose-500/10 text-rose-600 border-rose-500/30' },
+    { icon: '💐', label: 'Ramos', link: '/catalogo?cat=Ramos de Flores', color: 'bg-pink-500/10 text-pink-600 border-pink-500/30' },
+    { icon: '💌', label: 'Tarjeta QR', link: '/dedicatoria/nueva', badge: 'Nuevo', color: 'bg-fuchsia-500/10 text-fuchsia-600 border-fuchsia-500/30' },
+    { icon: '📱', label: 'Escáner QR', link: '/escaner', color: 'bg-purple-500/10 text-purple-600 border-purple-500/30' },
+    { icon: '🕊️', label: 'Homenajes', link: '/catalogo?cat=Homenajes', color: 'bg-slate-500/10 text-slate-600 border-slate-500/30' },
+    { icon: '🎁', label: 'Regalos', link: '/catalogo?cat=Regalos', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
+    { icon: '⛪', label: 'Cementerios', link: '/cementerios', color: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
+  ];
+  const list = (Array.isArray(shortcuts) && shortcuts.length > 0) ? shortcuts : defaultShortcuts;
 
-function QuickAppActions() {
   return (
     <section className="bg-white py-6 border-b border-gray-100 shadow-sm sticky top-[76px] md:top-[88px] z-40 backdrop-blur-md bg-white/90">
       <div className="container mx-auto px-4">
         <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 snap-x">
-          {APP_SHORTCUTS.map((item, i) => (
+          {list.map((item: any, i: number) => (
             <a
               key={i}
               href={item.link}
-              className={`shrink-0 snap-start flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border ${item.color} font-bold text-xs md:text-sm hover:scale-105 active:scale-95 transition-all shadow-xs relative group`}
+              className={`shrink-0 snap-start flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border ${item.color || 'bg-rose-500/10 text-rose-600 border-rose-500/30'} font-bold text-xs md:text-sm hover:scale-105 active:scale-95 transition-all shadow-xs relative group`}
             >
               <span className="text-base">{item.icon}</span>
               <span>{item.label}</span>
@@ -563,8 +565,8 @@ function ProductCard({ item, addToCart, toggleWishlist, isInWishlist }: any) {
 }
 
 // ── Componente: Sección Flash Sale / Urgencia ──
-function UrgencyBar() {
-  const [timeLeft, setTimeLeft] = useState({ h: 5, m: 47, s: 33 });
+function UrgencyBar({ config }: { config?: any }) {
+  const [timeLeft, setTimeLeft] = useState({ h: config?.hours || 5, m: 47, s: 33 });
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -590,19 +592,19 @@ function UrgencyBar() {
             <span className="animate-ring absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-400" />
           </span>
-          <span className="font-bold text-yellow-400 text-xs uppercase tracking-widest">⚡ Entrega hoy disponible</span>
+          <span className="font-bold text-yellow-400 text-xs uppercase tracking-widest">{config?.badgeText || '⚡ Entrega hoy disponible'}</span>
         </div>
         <span className="text-gray-600 hidden sm:block">|</span>
         <div className="flex items-center gap-2">
-          <span className="text-gray-300 text-xs">Cierre de despacho hoy en:</span>
+          <span className="text-gray-300 text-xs">{config?.countdownText || 'Cierre de despacho hoy en:'}</span>
           <div className="flex gap-1">
             {[pad(timeLeft.h), pad(timeLeft.m), pad(timeLeft.s)].map((unit, i) => (
               <span key={i} className="bg-primary text-white font-mono font-black text-xs md:text-sm px-2 py-0.5 rounded-md">{unit}</span>
             ))}
           </div>
         </div>
-        <a href="/catalogo?badge=Entrega+Hoy" className="hidden md:flex items-center gap-1 text-primary text-xs font-bold hover:underline">
-          Ver disponibles <ArrowRight className="w-3 h-3" />
+        <a href={config?.linkUrl || "/catalogo?badge=Entrega+Hoy"} className="hidden md:flex items-center gap-1 text-primary text-xs font-bold hover:underline">
+          {config?.linkText || 'Ver disponibles'} <ArrowRight className="w-3 h-3" />
         </a>
       </div>
     </div>
@@ -676,13 +678,13 @@ export default function HomePage() {
       <HeroSlider config={siteConfig.heroSlider} timings={siteConfig.timings} />
 
       {/* Barra de urgencia */}
-      <UrgencyBar />
+      <UrgencyBar config={siteConfig.urgencyBar} />
 
       {/* Accesos rápidos Estilo App */}
-      <QuickAppActions />
+      <QuickAppActions shortcuts={siteConfig.quickShortcuts} />
 
       {/* Ticker de confianza */}
-      <TrustTicker />
+      <TrustTicker items={siteConfig.trustTicker} />
 
       {/* Categorías visuales */}
       <CategoryGrid config={siteConfig.colecciones} />

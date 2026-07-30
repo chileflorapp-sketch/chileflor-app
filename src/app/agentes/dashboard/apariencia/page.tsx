@@ -210,6 +210,7 @@ export default function AparienciaPage() {
         <button onClick={() => setActiveTab('banners')} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'banners' ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'text-gray-500 hover:text-gray-300'}`}><CreditCard size={18} /> Banners</button>
         <button onClick={() => setActiveTab('nosotros')} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'nosotros' ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'text-gray-500 hover:text-gray-300'}`}><Users size={18} /> Nosotros</button>
         <button onClick={() => setActiveTab('colecciones')} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'colecciones' ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'text-gray-500 hover:text-gray-300'}`}><LayoutTemplate size={18} /> Colecciones</button>
+        <button onClick={() => setActiveTab('barras')} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'barras' ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'text-gray-500 hover:text-gray-300'}`}><Sparkles size={18} /> Barras y Accesos Rápidos</button>
       </div>
 
       <div className="bg-[#141416] border border-[#1C1C1E] rounded-2xl p-6 md:p-8">
@@ -467,6 +468,114 @@ export default function AparienciaPage() {
         )}
 
         {/* TAB: COLECCIONES */}
+        
+        {/* TAB: BARRAS Y ACCESOS RÁPIDOS */}
+        {activeTab === 'barras' && (
+          <div className="space-y-10">
+            {/* Barra de Urgencia Superior */}
+            <div className="p-6 bg-[#1A1A1D] border border-gray-800 rounded-2xl">
+              <h3 className="text-lg font-bold text-fuchsia-400 mb-4">⚡ Barra de Urgencia (Encabezado Superior)</h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>{renderInput('Texto Badge (Izquierda)', ['urgencyBar', 'badgeText'], false, true)}</div>
+                <div>{renderInput('Texto Contador Despacho', ['urgencyBar', 'countdownText'], false, true)}</div>
+                <div>{renderInput('Texto del Enlace', ['urgencyBar', 'linkText'], false, true)}</div>
+                <div>{renderInput('URL del Enlace', ['urgencyBar', 'linkUrl'], false, false)}</div>
+              </div>
+            </div>
+
+            {/* Accesos Rápidos Estilo App (Quick Shortcuts) */}
+            <div className="p-6 bg-[#1A1A1D] border border-gray-800 rounded-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-bold text-fuchsia-400">📱 Botones de Acceso Rápido (Estilo App)</h3>
+                  <p className="text-xs text-gray-500 mt-1">Botones deslizables en la portada con ícono, texto, etiqueta y enlace.</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    const newItems = [...(config?.quickShortcuts || [])];
+                    newItems.push({ icon: '🌸', label: 'Nuevo Acceso', link: '/catalogo', badge: 'Nuevo', color: 'bg-rose-500/10 text-rose-600 border-rose-500/30' });
+                    updateConfig(['quickShortcuts'], newItems);
+                  }}
+                  className="bg-fuchsia-500/20 text-fuchsia-400 px-4 py-2 rounded-lg text-sm font-bold hover:bg-fuchsia-500/30 transition-colors"
+                >
+                  + Añadir Botón Acceso Rápido
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {(config?.quickShortcuts || []).map((_: any, i: number) => (
+                  <div key={i} className="p-4 bg-[#141416] rounded-xl border border-gray-700 relative group">
+                    <button 
+                      onClick={() => {
+                        if(confirm('¿Eliminar este botón de acceso rápido?')) {
+                          const newItems = [...config.quickShortcuts];
+                          newItems.splice(i, 1);
+                          updateConfig(['quickShortcuts'], newItems);
+                        }
+                      }}
+                      className="absolute top-4 right-4 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Eliminar botón"
+                    >
+                      <X size={20} />
+                    </button>
+
+                    <div className="grid md:grid-cols-4 gap-4">
+                      <div>{renderInput('Ícono / Emoji', ['quickShortcuts', i, 'icon'])}</div>
+                      <div>{renderInput('Etiqueta / Nombre', ['quickShortcuts', i, 'label'])}</div>
+                      <div>{renderInput('Badge / Insignia (ej: HOY, NUEVO)', ['quickShortcuts', i, 'badge'])}</div>
+                      <div>{renderInput('Enlace / URL', ['quickShortcuts', i, 'link'])}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Cinta Ticker de Confianza */}
+            <div className="p-6 bg-[#1A1A1D] border border-gray-800 rounded-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-fuchsia-400">📜 Ticker de Confianza Infinito</h3>
+                  <p className="text-xs text-gray-500 mt-1">Frases de garantía que se desplazan de forma continua.</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    const newItems = [...(config?.trustTicker || [])];
+                    newItems.push('✨ Nueva garantía de confianza');
+                    updateConfig(['trustTicker'], newItems);
+                  }}
+                  className="bg-fuchsia-500/20 text-fuchsia-400 px-4 py-2 rounded-lg text-sm font-bold hover:bg-fuchsia-500/30 transition-colors"
+                >
+                  + Añadir Frase Ticker
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {(config?.trustTicker || []).map((_: any, i: number) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={config.trustTicker[i] || ''}
+                      onChange={(e) => updateConfig(['trustTicker', i], e.target.value)}
+                      className="w-full bg-[#141416] border border-gray-700 rounded-xl px-4 py-2 text-white outline-none focus:border-fuchsia-500"
+                    />
+                    <button 
+                      onClick={() => {
+                        const newItems = [...config.trustTicker];
+                        newItems.splice(i, 1);
+                        updateConfig(['trustTicker'], newItems);
+                      }}
+                      className="text-red-500 hover:text-red-400 p-2 font-bold"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        )}
+
         {activeTab === 'colecciones' && (
           <div className="space-y-8">
             <div>

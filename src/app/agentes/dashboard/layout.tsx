@@ -19,9 +19,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Clientes VIP', path: '/agentes/dashboard/clientes', icon: <Users size={18} /> },
   ];
 
+  menu.push({ name: 'Apariencia Web', path: '/agentes/dashboard/apariencia', icon: <LayoutDashboard size={18} /> });
   if (agent.role === 'ADMIN') {
     menu.push({ name: 'Agentes', path: '/agentes/dashboard/agentes', icon: <ShieldAlert size={18} /> });
-    menu.push({ name: 'Apariencia Web', path: '/agentes/dashboard/apariencia', icon: <LayoutDashboard size={18} /> }); // Puedes usar otro icono si prefieres
   }
 
   return (

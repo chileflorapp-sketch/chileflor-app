@@ -19,7 +19,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { id, estado, badge, nombre, precio_base, imagen, descripcion, categoria, subcategoria, cross_sell, colores, galeria } = await request.json();
+    const { id, estado, badge, nombre, precio_base, imagen, descripcion, categoria, subcategoria, cross_sell, colores, galeria, tags, slug, meta_title, meta_description, meta_keywords } = await request.json();
 
     const updates: any = {};
     if (estado !== undefined) updates.estado = estado;
@@ -31,6 +31,11 @@ export async function POST(request: Request) {
     if (categoria) updates.categoria = categoria;
     if (subcategoria) updates.subcategoria = subcategoria;
     if (cross_sell !== undefined) updates.cross_sell = cross_sell;
+    if (tags !== undefined) updates.tags = tags;
+    if (slug !== undefined) updates.slug = slug;
+    if (meta_title !== undefined) updates.meta_title = meta_title;
+    if (meta_description !== undefined) updates.meta_description = meta_description;
+    if (meta_keywords !== undefined) updates.meta_keywords = meta_keywords;
 
     if (colores !== undefined || galeria !== undefined) {
       const { data: currentProduct } = await supabase.from('productos').select('tags_visuales').eq('id', id).single();

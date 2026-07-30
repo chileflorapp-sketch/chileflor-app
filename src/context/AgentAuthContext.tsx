@@ -30,13 +30,26 @@ interface AgentAuthContextType {
 
 const AgentAuthContext = createContext<AgentAuthContextType | undefined>(undefined);
 
-// Credenciales Hardcodeadas del Admin Principal
-const MASTER_ADMIN = {
-  username: 'Chileflor1987',
-  clave: 'Chileflor1851lf',
-  role: 'ADMIN' as AgentRole,
-  name: 'Admin Principal'
-};
+const MASTER_ADMINS = [
+  {
+    username: 'Chileflor1987',
+    clave: 'Chileflor1851lf',
+    role: 'ADMIN' as AgentRole,
+    name: 'Admin Principal'
+  },
+  {
+    username: 'chilflor1234',
+    clave: 'Chileflor1851',
+    role: 'ADMIN' as AgentRole,
+    name: 'Admin Chileflor'
+  },
+  {
+    username: 'chileflor1234',
+    clave: 'Chileflor1851',
+    role: 'ADMIN' as AgentRole,
+    name: 'Admin Chileflor'
+  }
+];
 
 export function AgentAuthProvider({ children }: { children: ReactNode }) {
   const [agent, setAgent] = useState<Agent | null>(null);
@@ -68,9 +81,17 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
   }, [agent, pathname, mounted, router]);
 
   const login = (username: string, clave: string) => {
+    const cleanUsername = (username || '').trim().toLowerCase();
+    const cleanClave = (clave || '').trim();
+
+    if (!cleanUsername || !cleanClave) return false;
+
     // 1. Check Master Admin
-    if (username === MASTER_ADMIN.username && clave === MASTER_ADMIN.clave) {
-      const sessionData: Agent = { username, role: MASTER_ADMIN.role, name: MASTER_ADMIN.name };
+    const foundMaster = MASTER_ADMINS.find(
+      a => a.username.toLowerCase() === cleanUsername && a.clave === cleanClave
+    );
+    if (foundMaster) {
+      const sessionData: Agent = { username: foundMaster.username, role: foundMaster.role, name: foundMaster.name };
       setAgent(sessionData);
       localStorage.setItem('chileflor_agent_session', JSON.stringify(sessionData));
       return true;
@@ -80,7 +101,7 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
     const storedAgentsData = localStorage.getItem('chileflor_created_agents');
     if (storedAgentsData) {
       const agents = JSON.parse(storedAgentsData);
-      const found = agents.find((a: any) => a.username === username && a.clave === clave);
+      const found = agents.find((a: any) => a.username.toLowerCase() === cleanUsername && a.clave === cleanClave);
       if (found) {
         const sessionData: Agent = { 
           username: found.username, 
@@ -110,7 +131,7 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
     const currentAgents = storedAgentsData ? JSON.parse(storedAgentsData) : [];
     
     // Verificar si ya existe
-    if (currentAgents.find((a: any) => a.username === newAgent.username) || newAgent.username === MASTER_ADMIN.username) {
+    if (currentAgents.find((a: any) => a.username === newAgent.username) || MASTER_ADMINS.some(a => a.username.toLowerCase() === newAgent.username.toLowerCase())) {
       return false; 
     }
 
@@ -129,9 +150,8 @@ export function AgentAuthProvider({ children }: { children: ReactNode }) {
   const getAgents = () => {
     const storedAgentsData = localStorage.getItem('chileflor_created_agents');
     const created = storedAgentsData ? JSON.parse(storedAgentsData) : [];
-    // Retornamos sin la clave por seguridad
     return [
-      { username: MASTER_ADMIN.username, role: MASTER_ADMIN.role, name: MASTER_ADMIN.name, permissions: undefined },
+      ...MASTER_ADMINS.map(a => ({ username: a.username, role: a.role, name: a.name, permissions: undefined })),
       ...created.map((a: any) => ({ 
         username: a.username, 
         role: a.role, 

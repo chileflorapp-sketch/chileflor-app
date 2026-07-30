@@ -1,23 +1,40 @@
 'use client';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 
 export default function ContactoPage() {
-  const [formData, setFormData] = useState({ nombre: '', email: '', mensaje: '' });
+  const [formData, setFormData] = useState({ nombre: '', email: '', asunto: 'Consulta', mensaje: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simular el envío
-    setTimeout(() => {
-      setIsSubmitting(false);
+    
+    try {
+      await fetch("https://formsubmit.co/ajax/chileflor.app@gmail.com", {
+        method: "POST",
+        headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            nombre: formData.nombre,
+            email: formData.email,
+            asunto: formData.asunto,
+            mensaje: formData.mensaje
+        })
+      });
       setSubmitted(true);
-    }, 1500);
+    } catch (error) {
+      console.error("Error enviando formulario:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -44,8 +61,8 @@ export default function ContactoPage() {
             >
               <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4 text-xl">✉️</div>
               <h3 className="font-bold text-gray-900 mb-1">Correo Electrónico</h3>
-              <p className="text-gray-500 text-sm mb-2">Para consultas generales y corporativas.</p>
-              <a href="mailto:contacto@chileflor.cl" className="text-primary font-medium hover:underline">contacto@chileflor.cl</a>
+              <p className="text-sm text-gray-500 mb-2">Respuestas en menos de 24 hrs.</p>
+              <a href="mailto:chileflor.app@gmail.com" className="text-primary font-medium hover:underline">chileflor.app@gmail.com</a>
             </motion.div>
 
             <motion.div 
@@ -113,6 +130,27 @@ export default function ContactoPage() {
                         />
                       </div>
                     </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-gray-700">¿Sobre qué nos escribes?</label>
+                      <div className="relative">
+                        <select 
+                          required
+                          name="asunto"
+                          value={formData.asunto}
+                          onChange={handleChange}
+                          className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 text-gray-900 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
+                        >
+                          <option value="Consulta">Consulta</option>
+                          <option value="Sugerencia">Sugerencias</option>
+                          <option value="Reclamo">Reclamos</option>
+                          <option value="Felicitaciones">Felicitaciones</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                          <ChevronDown className="h-5 w-5" />
+                        </div>
+                      </div>
+                    </div>
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-gray-700">Tu mensaje</label>
                       <textarea 
@@ -162,7 +200,7 @@ export default function ContactoPage() {
                     <button 
                       onClick={() => {
                         setSubmitted(false);
-                        setFormData({ nombre: '', email: '', mensaje: '' });
+                        setFormData({ nombre: '', email: '', asunto: 'Consulta', mensaje: '' });
                       }}
                       className="inline-block bg-gray-900 text-white font-medium px-8 py-3 rounded-xl shadow-lg hover:bg-gray-800 transition-colors"
                     >

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "b2b-ord-1785385921219",
+    "cliente": "frftftvtft tgtgrfr",
+    "telefono": "+5979992848",
+    "empresa": "dfffgtfrt",
+    "rut": "761234567",
+    "detalles": [
+      {
+        "id": "21261d50-4432-4420-8fdb-bde802b7e8d4",
+        "nombre": "cggefet",
+        "cantidad": 1,
+        "unidad": "Unidad",
+        "precioUnitario": 5544,
+        "subtotal": 5544
+      }
+    ],
+    "total": 5544,
+    "tipo": "b2b",
+    "status": "pending",
+    "created_at": "2026-07-30T04:32:01.247Z"
+  }
+]

@@ -9,6 +9,13 @@ export interface VisualTags {
   luz: 'natural' | 'estudio';
 }
 
+export interface ProductTags {
+  ocasiones?: string[];
+  sentimientos?: string[];
+  flores?: string[];
+  colores?: string[];
+}
+
 export interface Product {
   id: string; // SKU
   nombre: string;
@@ -22,13 +29,30 @@ export interface Product {
   cross_sell?: string[];
   estado: 'activo' | 'fuera_de_temporada' | 'proximamente';
   ventas: number; // Para ordenar por populares
+  // SEO & Tags opcionales
+  slug?: string;
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+  schema_markup?: Record<string, any>;
+  tags?: ProductTags;
+}
+
+export interface SubCategory {
+  id: number;
+  nombre: string;
+  slug?: string;
+  meta_title?: string;
+  meta_description?: string;
 }
 
 export interface Category {
   id: number;
   nombre: string;
   slug: string;
-  subcategorias: { id: number; nombre: string }[];
+  subcategorias: SubCategory[];
+  meta_title?: string;
+  meta_description?: string;
 }
 
 export const CATEGORIAS: Category[] = [
