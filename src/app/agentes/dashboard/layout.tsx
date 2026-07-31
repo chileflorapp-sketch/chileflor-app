@@ -2,7 +2,7 @@
 
 import { useAgentAuth } from '@/context/AgentAuthContext';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Package, Truck, Users, ShieldAlert, LogOut, ExternalLink, Mail } from 'lucide-react';
+import { LayoutDashboard, Package, Truck, Users, ShieldAlert, LogOut, ExternalLink, Mail, Navigation } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { agent, logout } = useAgentAuth();
@@ -15,6 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Catálogo', path: '/agentes/dashboard/catalogo', icon: <Package size={18} /> },
     { name: 'Catálogo B2B', path: '/agentes/dashboard/catalogo-b2b', icon: <Package size={18} /> },
     { name: 'Pedidos y B2B', path: '/agentes/dashboard/pedidos', icon: <Truck size={18} /> },
+    { name: 'Logística', path: '/agentes/dashboard/logistica', icon: <Navigation size={18} /> },
     { name: 'Tarjetas Digitales', path: '/agentes/dashboard/tarjetas', icon: <Mail size={18} /> },
     { name: 'Clientes VIP', path: '/agentes/dashboard/clientes', icon: <Users size={18} /> },
   ];
