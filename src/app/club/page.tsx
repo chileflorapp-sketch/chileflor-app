@@ -3,20 +3,23 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { Crown, Sparkles, ArrowRight, ShieldCheck, Mail } from 'lucide-react';
+import { Crown, Sparkles, ArrowRight, ShieldCheck, Mail, Lock } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
-import { FaApple } from 'react-icons/fa';
+import { FaFacebook } from 'react-icons/fa';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 export default function VIPClub() {
   const router = useRouter();
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleOAuthLogin = async (provider: 'google' | 'apple') => {
+  const handleOAuthLogin = async (provider: 'google' | 'facebook') => {
     setLoading(true);
     setError('');
     try {
@@ -35,52 +38,69 @@ export default function VIPClub() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !password) return;
     
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
-      // 1. Buscar si el cliente ya existe
-      const { data: existingClient, error: fetchError } = await supabase
-        .from('clientes_vip')
-        .select('*')
-        .eq('email', email.toLowerCase().trim())
-        .maybeSingle();
-
-      if (existingClient) {
-        // Ya existe, actualizar last_login y entrar
-        await supabase.from('clientes_vip').update({ last_login: new Date().toISOString() }).eq('email', existingClient.email);
-        localStorage.setItem('vip_customer_email', existingClient.email);
-        router.push('/mi-cuenta');
-      } else {
-        // 2. No existe, requiere Nombre para registrarse
+      if (isSignUp) {
         if (!name) {
-          setError('Como es tu primera vez, necesitamos tu nombre completo para el registro VIP.');
+          setError('El nombre completo es requerido para crear una cuenta.');
           setLoading(false);
           return;
         }
 
-        const { error: insertError } = await supabase.from('clientes_vip').insert([{
+        // 1. Crear usuario en Supabase Auth
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email: email.toLowerCase().trim(),
-          full_name: name,
-          tier: 'BRONZE',
-          puntos_actuales: 100, // Bono de bienvenida
-          puntos_historicos: 100,
-          last_login: new Date().toISOString()
-        }]);
+          password,
+          options: {
+            data: { full_name: name }
+          }
+        });
 
-        if (insertError) throw insertError;
+        if (signUpError) throw signUpError;
 
-        // Registrar primeros 100 puntos en auditoría
-        await supabase.from('vip_historial_puntos').insert([{
-          email_cliente: email.toLowerCase().trim(),
-          cantidad: 100,
-          tipo_transaccion: 'EARN',
-          descripcion: 'Bono de Bienvenida al Club VIP'
-        }]);
+        // 2. Insertar en clientes_vip si el usuario se creó (solo si no existe)
+        // Nota: Si requieren confirmación de email, el usuario se crea pero no hay sesión activa.
+        if (data.user) {
+          const { data: existing } = await supabase.from('clientes_vip').select('id').eq('email', data.user.email).maybeSingle();
+          if (!existing) {
+            await supabase.from('clientes_vip').insert([{
+              email: data.user.email,
+              full_name: name,
+              tier: 'BRONZE',
+              puntos_actuales: 100,
+              puntos_historicos: 100,
+              last_login: new Date().toISOString()
+            }]);
+            await supabase.from('vip_historial_puntos').insert([{
+              email_cliente: data.user.email,
+              cantidad: 100,
+              tipo_transaccion: 'EARN',
+              descripcion: 'Bono de Bienvenida al Club VIP'
+            }]);
+          }
+        }
 
-        localStorage.setItem('vip_customer_email', email.toLowerCase().trim());
+        setSuccess('¡Cuenta creada! Si recibes un correo de confirmación, acéptalo. Si no, puedes iniciar sesión.');
+        setIsSignUp(false); // Cambiar a modo login
+      } else {
+        // Modo Login
+        const { error: signInError, data } = await supabase.auth.signInWithPassword({
+          email: email.toLowerCase().trim(),
+          password
+        });
+
+        if (signInError) throw signInError;
+        
+        // Actualizar last_login
+        if (data.user?.email) {
+          await supabase.from('clientes_vip').update({ last_login: new Date().toISOString() }).eq('email', data.user.email);
+        }
+
         router.push('/mi-cuenta');
       }
     } catch (err: any) {
@@ -133,9 +153,9 @@ export default function VIPClub() {
           {/* Login Side */}
           <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-[#111116]">
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white mb-2">Ingresa a tu Cuenta</h2>
+              <h2 className="text-2xl font-bold text-white mb-2">{isSignUp ? 'Crea tu Cuenta VIP' : 'Ingresa a tu Cuenta'}</h2>
               <p className="text-gray-400 text-sm">
-                Fricción cero: Solo necesitamos tu correo electrónico para identificarte. Si eres nuevo, te pediremos tu nombre.
+                Inicia sesión con tus redes sociales o utiliza tu correo electrónico y contraseña.
               </p>
             </div>
             
@@ -151,12 +171,12 @@ export default function VIPClub() {
               </button>
               
               <button 
-                onClick={() => handleOAuthLogin('apple')}
+                onClick={() => handleOAuthLogin('facebook')}
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-3 bg-black hover:bg-gray-900 border border-gray-700 text-white font-bold px-4 py-3.5 rounded-xl transition-all disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-3 bg-[#1877F2] hover:bg-[#1864D0] text-white font-bold px-4 py-3.5 rounded-xl transition-all disabled:opacity-50"
               >
-                <FaApple size={22} />
-                Continuar con Apple
+                <FaFacebook size={22} />
+                Continuar con Facebook
               </button>
             </div>
 
@@ -166,53 +186,83 @@ export default function VIPClub() {
               <div className="flex-grow border-t border-gray-800"></div>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-5">
+            <form onSubmit={handleLogin} className="space-y-4">
               
               {error && (
                 <div className="bg-fuchsia-500/10 border border-fuchsia-500/50 text-fuchsia-300 px-4 py-3 rounded-xl text-sm font-medium animate-in fade-in zoom-in-95">
                   {error}
                 </div>
               )}
+              {success && (
+                <div className="bg-emerald-500/10 border border-emerald-500/50 text-emerald-300 px-4 py-3 rounded-xl text-sm font-medium animate-in fade-in zoom-in-95">
+                  {success}
+                </div>
+              )}
+
+              {isSignUp && (
+                <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Nombre Completo</label>
+                  <input 
+                    type="text" 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Juan Pérez"
+                    className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 outline-none transition-all placeholder:text-gray-600"
+                  />
+                </div>
+              )}
 
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Correo Electrónico (Ingreso Rápido)</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Correo Electrónico</label>
                 <input 
                   type="email" 
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="tu@correo.com"
-                  className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3.5 text-white focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 outline-none transition-all placeholder:text-gray-600"
+                  className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 outline-none transition-all placeholder:text-gray-600"
                 />
               </div>
 
-              {/* Mostrar Nombre solo si hay error de que falta o si el usuario quiere llenar todo */}
-              <div className={`transition-all duration-300 overflow-hidden ${error.includes('primera vez') || name.length > 0 ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Nombre Completo</label>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Contraseña</label>
                 <input 
-                  type="text" 
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Juan Pérez"
-                  className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3.5 text-white focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 outline-none transition-all placeholder:text-gray-600"
+                  type="password" 
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 outline-none transition-all placeholder:text-gray-600"
                 />
               </div>
 
-              <button 
-                type="submit" 
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(192,38,211,0.3)] hover:shadow-[0_0_30px_rgba(192,38,211,0.5)] flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <span className="animate-spin text-xl">⏳</span>
-                ) : (
-                  <>
-                    Acceder a mi portal
-                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                  </>
-                )}
-              </button>
-              
+              <div className="pt-2 flex flex-col gap-3">
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg shadow-fuchsia-500/20 disabled:opacity-50 flex items-center justify-center gap-2 group"
+                >
+                  {loading ? (
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      {isSignUp ? 'Crear Cuenta VIP' : 'Ingresar al Club'} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSignUp(!isSignUp);
+                    setError('');
+                    setSuccess('');
+                  }}
+                  className="text-gray-400 text-sm font-medium hover:text-white transition-colors"
+                >
+                  {isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Crea una nueva'}
+                </button>
+              </div>
             </form>
             
             <p className="text-center text-xs text-gray-500 mt-8">
