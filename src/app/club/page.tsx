@@ -3,9 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { Crown, Sparkles, ArrowRight, ShieldCheck, Mail, Lock } from 'lucide-react';
-import { FcGoogle } from 'react-icons/fc';
-import { FaFacebook } from 'react-icons/fa';
+import { Crown, Sparkles, ArrowRight, ShieldCheck, Lock } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
@@ -18,23 +16,6 @@ export default function VIPClub() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
-  const handleOAuthLogin = async (provider: 'google' | 'facebook') => {
-    setLoading(true);
-    setError('');
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      setError(`Error al iniciar sesión con ${provider}: ${err.message}`);
-      setLoading(false);
-    }
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,37 +136,10 @@ export default function VIPClub() {
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-white mb-2">{isSignUp ? 'Crea tu Cuenta VIP' : 'Ingresa a tu Cuenta'}</h2>
               <p className="text-gray-400 text-sm">
-                Inicia sesión con tus redes sociales o utiliza tu correo electrónico y contraseña.
+                Inicia sesión o crea una cuenta usando tu correo electrónico y contraseña.
               </p>
             </div>
             
-            {/* Social Login Buttons */}
-            <div className="flex flex-col gap-3 mb-6">
-              <button 
-                onClick={() => handleOAuthLogin('google')}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-900 font-bold px-4 py-3.5 rounded-xl transition-all disabled:opacity-50"
-              >
-                <FcGoogle size={22} />
-                Continuar con Google
-              </button>
-              
-              <button 
-                onClick={() => handleOAuthLogin('facebook')}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 bg-[#1877F2] hover:bg-[#1864D0] text-white font-bold px-4 py-3.5 rounded-xl transition-all disabled:opacity-50"
-              >
-                <FaFacebook size={22} />
-                Continuar con Facebook
-              </button>
-            </div>
-
-            <div className="relative flex items-center py-5">
-              <div className="flex-grow border-t border-gray-800"></div>
-              <span className="flex-shrink-0 mx-4 text-gray-500 text-xs uppercase tracking-widest font-bold">O usa tu correo</span>
-              <div className="flex-grow border-t border-gray-800"></div>
-            </div>
-
             <form onSubmit={handleLogin} className="space-y-4">
               
               {error && (
