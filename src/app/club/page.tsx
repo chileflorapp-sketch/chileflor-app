@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { Crown, Sparkles, ArrowRight, ShieldCheck, Lock } from 'lucide-react';
+import { Crown, Sparkles, ArrowRight, ShieldCheck, Lock, Eye, EyeOff } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
@@ -11,11 +11,38 @@ export default function VIPClub() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setError('Por favor, ingresa tu correo electrónico.');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
+        redirectTo: `${window.location.origin}/club/reset-password`,
+      });
+      if (error) throw error;
+      setSuccess('Te hemos enviado un enlace para recuperar tu contraseña. Revisa tu correo (y la carpeta de spam).');
+    } catch (err: any) {
+      setError(`Error: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +56,12 @@ export default function VIPClub() {
       if (isSignUp) {
         if (!name) {
           setError('El nombre completo es requerido para crear una cuenta.');
+          setLoading(false);
+          return;
+        }
+        
+        if (password !== confirmPassword) {
+          setError('Las contraseñas no coinciden.');
           setLoading(false);
           return;
         }
@@ -66,7 +99,7 @@ export default function VIPClub() {
           }
         }
 
-        setSuccess('¡Cuenta creada! Si recibes un correo de confirmación, acéptalo. Si no, puedes iniciar sesión.');
+        setSuccess('¡Cuenta creada con éxito! ATENCIÓN: Hemos enviado un enlace de confirmación a tu correo. Debes abrirlo para poder iniciar sesión.');
         setIsSignUp(false); // Cambiar a modo login
       } else {
         // Modo Login
@@ -134,13 +167,17 @@ export default function VIPClub() {
           {/* Login Side */}
           <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-[#111116]">
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white mb-2">{isSignUp ? 'Crea tu Cuenta VIP' : 'Ingresa a tu Cuenta'}</h2>
+              <h2 className="text-2xl font-bold text-white mb-2">
+                {isForgotPassword ? 'Recupera tu Contraseña' : isSignUp ? 'Crea tu Cuenta VIP' : 'Ingresa a tu Cuenta'}
+              </h2>
               <p className="text-gray-400 text-sm">
-                Inicia sesión o crea una cuenta usando tu correo electrónico y contraseña.
+                {isForgotPassword 
+                  ? 'Ingresa tu correo y te enviaremos un enlace para crear una nueva contraseña.'
+                  : 'Inicia sesión o crea una cuenta usando tu correo electrónico y contraseña.'}
               </p>
             </div>
             
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={isForgotPassword ? handleResetPassword : handleLogin} className="space-y-4">
               
               {error && (
                 <div className="bg-fuchsia-500/10 border border-fuchsia-500/50 text-fuchsia-300 px-4 py-3 rounded-xl text-sm font-medium animate-in fade-in zoom-in-95">
@@ -153,7 +190,7 @@ export default function VIPClub() {
                 </div>
               )}
 
-              {isSignUp && (
+              {!isForgotPassword && isSignUp && (
                 <div className="animate-in fade-in slide-in-from-top-4 duration-300">
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Nombre Completo</label>
                   <input 
@@ -178,19 +215,63 @@ export default function VIPClub() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Contraseña</label>
-                <input 
-                  type="password" 
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 outline-none transition-all placeholder:text-gray-600"
-                />
-              </div>
+              {!isForgotPassword && (
+                <>
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest">Contraseña</label>
+                      {!isSignUp && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsForgotPassword(true);
+                            setError('');
+                            setSuccess('');
+                          }}
+                          className="text-xs text-fuchsia-400 hover:text-fuchsia-300 font-medium"
+                        >
+                          ¿Olvidaste tu contraseña?
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input 
+                        type={showPassword ? "text" : "password"}
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 outline-none transition-all placeholder:text-gray-600"
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
 
-              <div className="pt-2 flex flex-col gap-3">
+                  {isSignUp && (
+                    <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Confirmar Contraseña</label>
+                      <div className="relative">
+                        <input 
+                          type={showPassword ? "text" : "password"}
+                          required
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full bg-[#1C1C1E] border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-fuchsia-500 focus:ring-1 focus:ring-fuchsia-500 outline-none transition-all placeholder:text-gray-600"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              <div className="pt-4 flex flex-col gap-3">
                 <button 
                   type="submit" 
                   disabled={loading}
@@ -200,7 +281,7 @@ export default function VIPClub() {
                     <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
                     <>
-                      {isSignUp ? 'Crear Cuenta VIP' : 'Ingresar al Club'} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                      {isForgotPassword ? 'Enviar Enlace' : isSignUp ? 'Crear Cuenta VIP' : 'Ingresar al Club'} <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                     </>
                   )}
                 </button>
@@ -208,13 +289,17 @@ export default function VIPClub() {
                 <button
                   type="button"
                   onClick={() => {
-                    setIsSignUp(!isSignUp);
+                    if (isForgotPassword) {
+                      setIsForgotPassword(false);
+                    } else {
+                      setIsSignUp(!isSignUp);
+                    }
                     setError('');
                     setSuccess('');
                   }}
                   className="text-gray-400 text-sm font-medium hover:text-white transition-colors"
                 >
-                  {isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Crea una nueva'}
+                  {isForgotPassword ? 'Volver al inicio de sesión' : isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Crea una nueva'}
                 </button>
               </div>
             </form>
