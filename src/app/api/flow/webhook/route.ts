@@ -82,6 +82,65 @@ export async function POST(request: Request) {
         console.error('Error al actualizar pedido en BD:', error);
       } else {
         console.log(`Pedido ${orderId} pagado exitosamente en Flow.`);
+        
+        // --- INICIO: NOTIFICACIÓN A EQUIPO DE VENTAS ---
+        const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
+        const telegramChatId = process.env.TELEGRAM_CHAT_ID;
+        const webhookUrl = process.env.NOTIFICATIONS_WEBHOOK_URL;
+
+        if (telegramToken && telegramChatId || webhookUrl) {
+          try {
+            // Obtener detalles de la orden para armar el mensaje
+            const { data: orderData } = await supabase
+              .from('pedidos')
+              .select('*, cliente_id(*)')
+              .eq('codigo_orden', orderId)
+              .single();
+
+            if (orderData) {
+              const totalFormat = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(orderData.total);
+              
+              // Mensaje formateado
+              const message = `🚨 *¡NUEVA VENTA CONFIRMADA!* 🚨\n\n` +
+                              `🛍️ *Orden:* #${orderData.codigo_orden}\n` +
+                              `💰 *Total:* ${totalFormat}\n` +
+                              `📅 *Fecha de entrega:* ${orderData.fecha_entrega || 'No especificada'}\n\n` +
+                              `👉 Revisa los detalles de esta orden en el panel CRM para prepararla.`;
+
+              // Si tiene configurado Telegram
+              if (telegramToken && telegramChatId) {
+                const telegramUrl = `https://api.telegram.org/bot${telegramToken}/sendMessage`;
+                await fetch(telegramUrl, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    chat_id: telegramChatId,
+                    text: message,
+                    parse_mode: 'Markdown'
+                  })
+                });
+                console.log('Notificación de Telegram enviada exitosamente.');
+              } 
+              // Fallback a Discord / Slack Webhook
+              else if (webhookUrl) {
+                const payload = {
+                  content: message, // Para Discord
+                  text: message     // Para Slack
+                };
+
+                await fetch(webhookUrl, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload)
+                });
+                console.log('Notificación de webhook enviada exitosamente.');
+              }
+            }
+          } catch (notifError) {
+            console.error('Error enviando notificación:', notifError);
+          }
+        }
+        // --- FIN: NOTIFICACIÓN ---
       }
     } else {
       console.log(`Pago para orden ${orderId} no fue aprobado. Estado de Flow: ${flowData.status}`);
