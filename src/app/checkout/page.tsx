@@ -1,8 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useCart } from '@/context/CartContext';
-import { ShoppingCart, MapPin, Truck, CreditCard, ShieldCheck, User, Loader2, ArrowRight, Mail, Gift, Check, ChevronRight } from 'lucide-react';
+import { ShoppingCart, MapPin, Truck, CreditCard, ShieldCheck, User, Loader2, ArrowRight, Mail, Gift, Check, ChevronRight, Crown } from 'lucide-react';
 
 export default function CheckoutPage() {
   const { items, cartTotal, cartCount, clearCart, updateQuantity, removeFromCart } = useCart();
@@ -13,6 +13,12 @@ export default function CheckoutPage() {
   const [comuna, setComuna] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('flow');
   const [orderGenerated, setOrderGenerated] = useState<string | null>(null);
+  
+  // VIP Points
+  const [vipEmail, setVipEmail] = useState<string | null>(null);
+  const [vipPuntos, setVipPuntos] = useState(0);
+  const [usarPuntos, setUsarPuntos] = useState(false);
+  const [puntosAplicados, setPuntosAplicados] = useState(0);
   
   // Datos del Comprador
   const [nombreComprador, setNombreComprador] = useState('');
@@ -61,6 +67,32 @@ export default function CheckoutPage() {
   const [deceasedDod, setDeceasedDod] = useState('');
   const [deceasedRut, setDeceasedRut] = useState('');
   
+  // Detectar sesión VIP
+  useEffect(() => {
+    async function checkVIP() {
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        let email = session?.user?.email;
+        if (!email) {
+          email = typeof window !== 'undefined' ? localStorage.getItem('vip_customer_email') || undefined : undefined;
+        }
+        if (email) {
+          setVipEmail(email);
+          setEmailComprador(email);
+          const { data } = await supabase.from('clientes_vip').select('puntos_actuales, full_name').eq('email', email).maybeSingle();
+          if (data) {
+            setVipPuntos(data.puntos_actuales || 0);
+            if (data.full_name) setNombreComprador(data.full_name);
+          }
+        }
+      } catch (e) {
+        console.warn('VIP check failed', e);
+      }
+    }
+    checkVIP();
+  }, []);
+  
   const subtotal = cartTotal;
   
   const COMUNAS_PRECIOS: Record<string, number> = {
@@ -79,7 +111,11 @@ export default function CheckoutPage() {
   const nightSurcharge = (isNightService && deliveryType === 'domicilio') ? subtotal * 0.25 : 0;
   const cashSurcharge = selectedPaymentMethod === 'efectivo' ? 2000 : 0;
   
-  const total = subtotal + deliveryFee + nightSurcharge + cashSurcharge;
+  // Calcular descuento por puntos (1 punto = $10)
+  const maxDescuentoPuntos = Math.min(vipPuntos * 10, subtotal); // No puede superar el subtotal
+  const descuentoPuntos = usarPuntos ? Math.min(puntosAplicados * 10, maxDescuentoPuntos) : 0;
+  
+  const total = subtotal + deliveryFee + nightSurcharge + cashSurcharge - descuentoPuntos;
 
   const handleCheckout = async () => {
     // Validaciones
@@ -108,14 +144,14 @@ export default function CheckoutPage() {
       codigo_orden: orderId,
       total: total,
       tipo_entrega: deliveryType,
-      puntos_ganados: 0,
-      puntos_usados: 0,
+      puntos_ganados: Math.floor(total / 1000),
+      puntos_usados: usarPuntos ? puntosAplicados : 0,
       estado: 'pending_payment',
       metodo_pago: 'whatsapp_link',
       detalles: {
         items: items.map(item => ({ nombre: item.name, cantidad: item.quantity, precio: item.price })),
         envio: deliveryFee,
-        descuento_puntos: 0,
+        descuento_puntos: descuentoPuntos,
         recargo_nocturno: nightSurcharge,
         recargo_efectivo: cashSurcharge,
         pago_preferido: selectedPaymentMethod,
@@ -681,11 +717,61 @@ export default function CheckoutPage() {
                 )}
               </div>
 
+              {/* Sección VIP Puntos */}
+              {vipEmail && vipPuntos > 0 && (
+                <div className="bg-gradient-to-r from-fuchsia-50 to-purple-50 rounded-2xl p-5 mb-6 border border-fuchsia-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Crown className="w-5 h-5 text-fuchsia-500" />
+                    <span className="text-sm font-bold text-fuchsia-700">Club VIP Chileflor</span>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-3">
+                    Tienes <strong className="text-fuchsia-600">{vipPuntos.toLocaleString('es-CL')} puntos</strong> disponibles
+                    <span className="text-gray-500"> (hasta ${maxDescuentoPuntos.toLocaleString('es-CL')} de descuento)</span>
+                  </p>
+                  
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${usarPuntos ? 'bg-fuchsia-600 border-fuchsia-600 text-white' : 'border-gray-300 bg-white group-hover:border-fuchsia-400'}`}>
+                      {usarPuntos && <Check className="w-3.5 h-3.5" />}
+                    </div>
+                    <input type="checkbox" className="hidden" checked={usarPuntos} onChange={(e) => {
+                      setUsarPuntos(e.target.checked);
+                      if (e.target.checked) setPuntosAplicados(vipPuntos);
+                    }} />
+                    <span className="text-sm text-gray-700 font-medium">Usar mis puntos en esta compra</span>
+                  </label>
+
+                  {usarPuntos && (
+                    <div className="mt-3 flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={0}
+                        max={vipPuntos}
+                        value={puntosAplicados}
+                        onChange={(e) => setPuntosAplicados(Number(e.target.value))}
+                        className="flex-1 accent-fuchsia-600"
+                      />
+                      <span className="text-sm font-bold text-fuchsia-700 min-w-[80px] text-right">
+                        -${descuentoPuntos.toLocaleString('es-CL')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="border-t-2 border-gray-100 pt-6 mb-8">
+                {descuentoPuntos > 0 && (
+                  <div className="flex justify-between items-center mb-3 text-sm">
+                    <span className="text-fuchsia-600 font-medium flex items-center gap-1"><Crown className="w-3.5 h-3.5" /> Descuento VIP</span>
+                    <span className="font-bold text-fuchsia-600">-${descuentoPuntos.toLocaleString('es-CL')}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <p className="text-black font-bold">Total a pagar</p>
                   <span className="text-3xl font-black text-black tracking-tight">${total.toLocaleString('es-CL')}</span>
                 </div>
+                {vipEmail && total > 0 && (
+                  <p className="text-xs text-fuchsia-500 mt-2 font-medium">+{Math.floor(total / 1000)} puntos VIP con esta compra ✨</p>
+                )}
               </div>
 
               <button 

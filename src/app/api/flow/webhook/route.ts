@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
+import { sendEmail, emailCompraConfirmada } from '@/lib/email';
 
 const API_KEY = process.env.FLOW_API_KEY;
 const SECRET_KEY = process.env.FLOW_SECRET_KEY;
@@ -82,6 +83,29 @@ export async function POST(request: Request) {
         console.error('Error al actualizar pedido en BD:', error);
       } else {
         console.log(`Pedido ${orderId} pagado exitosamente en Flow.`);
+        
+        // --- CORREO DE CONFIRMACIÓN AL CLIENTE ---
+        try {
+          const { data: orderForEmail } = await supabase
+            .from('pedidos')
+            .select('*')
+            .eq('codigo_orden', orderId)
+            .single();
+          
+          if (orderForEmail?.detalles?.comprador?.email) {
+            const email = orderForEmail.detalles.comprador.email;
+            const nombre = orderForEmail.detalles.comprador.nombre || 'Cliente';
+            const items = orderForEmail.detalles.items || [];
+            const htmlBody = emailCompraConfirmada(orderId, orderForEmail.total, items, nombre);
+            await sendEmail({
+              to: email,
+              subject: `🌸 ¡Gracias por tu compra! Pedido #${orderId} confirmado`,
+              html: htmlBody
+            });
+          }
+        } catch (emailErr) {
+          console.error('Error enviando email de confirmación:', emailErr);
+        }
         
         // --- INICIO: NOTIFICACIÓN A EQUIPO DE VENTAS ---
         const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
