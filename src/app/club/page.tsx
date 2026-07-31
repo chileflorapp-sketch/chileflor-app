@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { Crown, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Crown, Sparkles, ArrowRight, ShieldCheck, Mail } from 'lucide-react';
+import { FcGoogle } from 'react-icons/fc';
+import { FaApple } from 'react-icons/fa';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
@@ -13,6 +15,23 @@ export default function VIPClub() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleOAuthLogin = async (provider: 'google' | 'apple') => {
+    setLoading(true);
+    setError('');
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(`Error al iniciar sesión con ${provider}: ${err.message}`);
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,6 +139,33 @@ export default function VIPClub() {
               </p>
             </div>
             
+            {/* Social Login Buttons */}
+            <div className="flex flex-col gap-3 mb-6">
+              <button 
+                onClick={() => handleOAuthLogin('google')}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-900 font-bold px-4 py-3.5 rounded-xl transition-all disabled:opacity-50"
+              >
+                <FcGoogle size={22} />
+                Continuar con Google
+              </button>
+              
+              <button 
+                onClick={() => handleOAuthLogin('apple')}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 bg-black hover:bg-gray-900 border border-gray-700 text-white font-bold px-4 py-3.5 rounded-xl transition-all disabled:opacity-50"
+              >
+                <FaApple size={22} />
+                Continuar con Apple
+              </button>
+            </div>
+
+            <div className="relative flex items-center py-5">
+              <div className="flex-grow border-t border-gray-800"></div>
+              <span className="flex-shrink-0 mx-4 text-gray-500 text-xs uppercase tracking-widest font-bold">O usa tu correo</span>
+              <div className="flex-grow border-t border-gray-800"></div>
+            </div>
+
             <form onSubmit={handleLogin} className="space-y-5">
               
               {error && (
@@ -129,7 +175,7 @@ export default function VIPClub() {
               )}
 
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Correo Electrónico</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Correo Electrónico (Ingreso Rápido)</label>
                 <input 
                   type="email" 
                   required

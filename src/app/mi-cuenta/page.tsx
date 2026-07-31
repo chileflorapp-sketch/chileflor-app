@@ -22,13 +22,29 @@ export default function MiCuentaDashboard() {
   const [newEventDate, setNewEventDate] = useState('');
 
   useEffect(() => {
-    const email = localStorage.getItem('vip_customer_email');
-    if (!email) {
-      router.push('/club');
-      return;
+    async function checkAuth() {
+      // 1. Verificar sesión de Supabase (Google/Apple Auth)
+      const { data: { session } } = await supabase.auth.getSession();
+      let email = session?.user?.email;
+
+      // 2. Fallback a localStorage (Login rápido legacy)
+      if (!email) {
+        email = localStorage.getItem('vip_customer_email') || undefined;
+      }
+
+      if (!email) {
+        router.push('/club');
+        return;
+      }
+      
+      // Guardar en localStorage para consistencia si viene de OAuth
+      localStorage.setItem('vip_customer_email', email);
+      
+      fetchData(email);
     }
-    fetchData(email);
-  }, []);
+    
+    checkAuth();
+  }, [router]);
 
   async function fetchData(email: string) {
     setLoading(true);
@@ -82,7 +98,8 @@ export default function MiCuentaDashboard() {
     }
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem('vip_customer_email');
     router.push('/club');
   };

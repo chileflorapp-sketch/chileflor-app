@@ -104,6 +104,7 @@ export function ClientAuthProvider({ children }: { children: React.ReactNode }) 
 
   const signOut = async () => {
     localStorage.removeItem('chileflor_client_user');
+    localStorage.removeItem('vip_customer_email');
     setUser(null);
     setSession(null);
     await supabase.auth.signOut();
