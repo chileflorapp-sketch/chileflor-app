@@ -1,10 +1,10 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, MessageCircle, Home } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function CheckoutExitoPage() {
+function CheckoutExitoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -60,5 +60,17 @@ export default function CheckoutExitoPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutExitoPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
+        <span className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></span>
+      </div>
+    }>
+      <CheckoutExitoContent />
+    </Suspense>
   );
 }
