@@ -15,6 +15,7 @@ export default function CatalogoManagement() {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
   const [bulkPriceStatus, setBulkPriceStatus] = useState<'idle'|'saving'|'success'|'error'>('idle');
+  const [bulkRound, setBulkRound] = useState(true); // redondeo a X990 activado por defecto
   const [newCatName, setNewCatName] = useState('');
   const [newSubcatName, setNewSubcatName] = useState('');
   const [selectedCatForSub, setSelectedCatForSub] = useState('');
@@ -112,47 +113,81 @@ export default function CatalogoManagement() {
     setNewSubcatName('');
   };
 
-  const handleBulkPriceUpdate = async (percentage: number) => {
-    if (!canEditPrice) {
-      showToast('No tienes permisos para editar precios.');
-      return;
+  // ── Helper: refrescar catálogo tras un ajuste masivo ────────────────────
+  const refreshCatalogAfterBulk = async () => {
+    const res = await fetch('/api/catalogo');
+    const data = await res.json();
+    setCatalogo(data);
+    if (selectedProduct && selectedProduct !== 'new') {
+      const p = data.find((x: any) => x.id === selectedProduct);
+      if (p) setEditPrecio(p.precio_base);
     }
-    const actionText = percentage > 0 ? `SUBIR todos los precios un ${percentage}%` : `BAJAR todos los precios un ${Math.abs(percentage)}%`;
-    if (!confirm(`¿Estás COMPLETAMENTE SEGURO de querer ${actionText}? Esta acción afectará a todos los productos del catálogo al instante.`)) return;
-    
+  };
+
+  // ── Ajuste por porcentaje ────────────────────────────────────────────────
+  const handleBulkPriceUpdate = async (percentage: number) => {
+    if (!canEditPrice) { showToast('No tienes permisos para editar precios.'); return; }
+    const dir = percentage > 0 ? `SUBIR un +${percentage}%` : `BAJAR un ${percentage}%`;
+    const roundText = bulkRound ? ' (con redondeo a X.990)' : '';
+    if (!confirm(`¿Confirmas ${dir} en TODOS los productos?${roundText}`)) return;
     setBulkPriceStatus('saving');
     try {
       const res = await fetch('/api/catalogo/bulk-price', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ percentage })
+        body: JSON.stringify({ percentage, round: bulkRound }),
       });
       if (res.ok) {
-        showToast(`¡Precios actualizados exitosamente! (${actionText})`);
-        
-        // Refrescar el catálogo
-        const updatedCatRes = await fetch('/api/catalogo');
-        const data = await updatedCatRes.json();
-        setCatalogo(data);
-        
-        // Actualizar el precio del producto seleccionado en el editor si hay uno
-        if (selectedProduct && selectedProduct !== 'new') {
-           const p = data.find((x: any) => x.id === selectedProduct);
-           if (p) setEditPrecio(p.precio_base);
-        }
-        
+        showToast(`✅ Precios ${dir} actualizados${roundText}`);
+        await refreshCatalogAfterBulk();
         setBulkPriceStatus('success');
         setTimeout(() => setShowBulkPriceModal(false), 1000);
-      } else {
-        showToast('Error al actualizar precios masivamente.');
-        setBulkPriceStatus('error');
-      }
-    } catch (error) {
-      showToast('Error de red al actualizar precios.');
-      setBulkPriceStatus('error');
-    } finally {
-      setTimeout(() => setBulkPriceStatus('idle'), 3000);
-    }
+      } else { showToast('Error al actualizar precios.'); setBulkPriceStatus('error'); }
+    } catch { showToast('Error de red.'); setBulkPriceStatus('error'); }
+    finally { setTimeout(() => setBulkPriceStatus('idle'), 3000); }
+  };
+
+  // ── Redondear precios actuales a formato X.990 ───────────────────────────
+  const handleRoundPrices = async () => {
+    if (!canEditPrice) { showToast('Sin permisos.'); return; }
+    if (!confirm('¿Redondear TODOS los precios al formato X.990 (ej: 9990, 18990)? Los precios originales quedarán guardados.')) return;
+    setBulkPriceStatus('saving');
+    try {
+      const res = await fetch('/api/catalogo/bulk-price', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'round' }),
+      });
+      if (res.ok) {
+        showToast('🔢 Precios redondeados a formato X.990 exitosamente');
+        await refreshCatalogAfterBulk();
+        setBulkPriceStatus('success');
+        setTimeout(() => setShowBulkPriceModal(false), 1000);
+      } else { showToast('Error al redondear.'); setBulkPriceStatus('error'); }
+    } catch { showToast('Error de red.'); setBulkPriceStatus('error'); }
+    finally { setTimeout(() => setBulkPriceStatus('idle'), 3000); }
+  };
+
+  // ── Restaurar precios originales ─────────────────────────────────────────
+  const handleResetPrices = async () => {
+    if (!canEditPrice) { showToast('Sin permisos.'); return; }
+    if (!confirm('¿Restaurar los precios ORIGINALES de todos los productos? Esto revertirá todos los ajustes masivos aplicados.')) return;
+    setBulkPriceStatus('saving');
+    try {
+      const res = await fetch('/api/catalogo/bulk-price', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset' }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`↩️ ${data.updatedCount} precios restaurados al valor original`);
+        await refreshCatalogAfterBulk();
+        setBulkPriceStatus('success');
+        setTimeout(() => setShowBulkPriceModal(false), 1000);
+      } else { showToast('Error al restaurar.'); setBulkPriceStatus('error'); }
+    } catch { showToast('Error de red.'); setBulkPriceStatus('error'); }
+    finally { setTimeout(() => setBulkPriceStatus('idle'), 3000); }
   };
 
   // Sincronizar editor cuando cambia el producto seleccionado
@@ -841,55 +876,121 @@ export default function CatalogoManagement() {
         </div>
       )}
 
-      {/* Bulk Price Modal */}
+      {/* ── Bulk Price Modal ────────────────────────────────────────────── */}
       {showBulkPriceModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-[#1C1C1E] border border-gray-800 rounded-3xl p-6 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-white">Ajuste Masivo de Precios</h2>
-              <button onClick={() => setShowBulkPriceModal(false)} className="text-gray-500 hover:text-white transition-colors">✕</button>
-            </div>
-            
-            <p className="text-sm text-gray-400 mb-6">Selecciona el porcentaje para subir o bajar el precio de <strong>TODOS</strong> los productos del catálogo al mismo tiempo de forma interna.</p>
+          <div className="bg-[#1C1C1E] border border-gray-800 rounded-3xl p-6 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
 
-            <div className="space-y-6">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center text-lg">💰</div>
+                <h2 className="text-xl font-bold text-white">Ajuste Masivo de Precios</h2>
+              </div>
+              <button onClick={() => setShowBulkPriceModal(false)} className="text-gray-500 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10">✕</button>
+            </div>
+            <p className="text-xs text-gray-500 mb-6 pl-12">Afecta a <strong className="text-gray-300">TODOS</strong> los productos del catálogo de forma interna (sin que el cliente lo vea en tiempo real hasta que se suba).</p>
+
+            {/* Toggle de redondeo */}
+            <div className="flex items-center justify-between bg-white/[0.04] border border-white/8 rounded-2xl px-4 py-3 mb-6">
               <div>
-                <h3 className="text-xs font-bold text-green-500 uppercase tracking-widest mb-3">📈 Subir Precios (Inflación / Escasez)</h3>
+                <p className="text-sm font-bold text-white">🔢 Redondeo automático a X.990</p>
+                <p className="text-xs text-gray-500 mt-0.5">Ej: 10.230 → 9.990 · 18.400 → 17.990 · 25.100 → 24.990</p>
+              </div>
+              <button
+                onClick={() => setBulkRound(!bulkRound)}
+                className={`relative w-12 h-6 rounded-full transition-all ${bulkRound ? 'bg-fuchsia-500' : 'bg-gray-700'}`}
+              >
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${bulkRound ? 'left-6' : 'left-0.5'}`} />
+              </button>
+            </div>
+
+            <div className="space-y-5">
+
+              {/* ↑ Subir precios */}
+              <div>
+                <h3 className="text-[10px] font-extrabold text-green-400 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">📈 Subir Precios <span className="text-gray-600 font-normal normal-case tracking-normal">(inflación / escasez)</span></h3>
                 <div className="flex flex-wrap gap-2">
-                  {[5, 10, 20, 30, 40, 50].map(pct => (
-                    <button 
+                  {[5, 10, 15, 20, 30, 50].map(pct => (
+                    <button
                       key={`up-${pct}`}
                       onClick={() => handleBulkPriceUpdate(pct)}
                       disabled={bulkPriceStatus === 'saving'}
-                      className="bg-green-500/10 border border-green-500/30 hover:bg-green-500 text-green-500 hover:text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+                      className="bg-green-500/10 border border-green-500/30 hover:bg-green-500 text-green-400 hover:text-white px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
                     >
                       +{pct}%
                     </button>
                   ))}
                 </div>
               </div>
-              
+
+              {/* ↓ Bajar precios */}
               <div>
-                <h3 className="text-xs font-bold text-red-500 uppercase tracking-widest mb-3">📉 Bajar Precios (Oferta / Liquidación)</h3>
+                <h3 className="text-[10px] font-extrabold text-red-400 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">📉 Bajar Precios <span className="text-gray-600 font-normal normal-case tracking-normal">(oferta / liquidación)</span></h3>
                 <div className="flex flex-wrap gap-2">
-                  {[-5, -10, -15, -20, -25].map(pct => (
-                    <button 
+                  {[-5, -10, -15, -20, -25, -30].map(pct => (
+                    <button
                       key={`down-${pct}`}
                       onClick={() => handleBulkPriceUpdate(pct)}
                       disabled={bulkPriceStatus === 'saving'}
-                      className="bg-red-500/10 border border-red-500/30 hover:bg-red-500 text-red-500 hover:text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+                      className="bg-red-500/10 border border-red-500/30 hover:bg-red-500 text-red-400 hover:text-white px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
                     >
                       {pct}%
                     </button>
                   ))}
                 </div>
               </div>
+
+              {/* Separador */}
+              <div className="border-t border-white/6 pt-4 space-y-2.5">
+
+                {/* 🔢 Redondear precios actuales */}
+                <button
+                  onClick={handleRoundPrices}
+                  disabled={bulkPriceStatus === 'saving'}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 font-bold text-sm transition-all disabled:opacity-40"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <span className="text-lg">🔢</span>
+                    <span>
+                      <span className="block">Redondear precios actuales a X.990</span>
+                      <span className="text-xs text-blue-500/60 font-normal">Sin cambiar el porcentaje · solo ajusta el formato</span>
+                    </span>
+                  </span>
+                  <span className="text-blue-500/60 text-xs">→</span>
+                </button>
+
+                {/* ↩ Restaurar precios originales */}
+                <button
+                  onClick={handleResetPrices}
+                  disabled={bulkPriceStatus === 'saving'}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-400 font-bold text-sm transition-all disabled:opacity-40"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <span className="text-lg">↩️</span>
+                    <span>
+                      <span className="block">Restaurar precios normales (originales)</span>
+                      <span className="text-xs text-amber-500/60 font-normal">Revierte todos los ajustes masivos aplicados</span>
+                    </span>
+                  </span>
+                  <span className="text-amber-500/60 text-xs">→</span>
+                </button>
+              </div>
             </div>
-            
+
+            {/* Loading / Success / Error */}
             {bulkPriceStatus === 'saving' && (
-              <p className="text-center text-primary font-bold mt-6 animate-pulse">Actualizando toda la base de datos...</p>
+              <div className="mt-5 flex items-center justify-center gap-2 text-fuchsia-400 font-bold text-sm animate-pulse">
+                <span className="w-4 h-4 border-2 border-fuchsia-500 border-t-transparent rounded-full animate-spin" />
+                Actualizando toda la base de datos...
+              </div>
             )}
-            
+            {bulkPriceStatus === 'success' && (
+              <p className="mt-5 text-center text-emerald-400 font-bold text-sm">✅ ¡Precios actualizados con éxito!</p>
+            )}
+            {bulkPriceStatus === 'error' && (
+              <p className="mt-5 text-center text-red-400 font-bold text-sm">❌ Ocurrió un error. Intenta nuevamente.</p>
+            )}
           </div>
         </div>
       )}
