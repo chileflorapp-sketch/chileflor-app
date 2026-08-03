@@ -54,14 +54,14 @@ export async function POST(request: Request) {
         .eq('codigo_orden', orderId)
         .single();
 
-      if (existingOrder && existingOrder.estado === 'paid') {
+      if (existingOrder && (existingOrder.estado === 'paid' || existingOrder.estado === 'pagado')) {
         return NextResponse.json({ success: true, message: 'Pedido ya estaba marcado como pagado' });
       }
 
       // Actualizamos el pedido en Supabase
       const { error } = await supabaseAdmin
         .from('pedidos')
-        .update({ estado: 'paid' })
+        .update({ estado: 'pagado', metodo_pago: 'mercadopago' })
         .eq('codigo_orden', orderId);
 
       if (error) {

@@ -241,9 +241,12 @@ export default function CheckoutPage() {
           } else {
             console.error("Error desde MP API", data);
             alert(`Mercado Pago devolvió un error: ${data.error || 'Error desconocido'}`);
+            setLoading(false);
           }
         } catch (error) {
           console.error("Error llamando a API MP", error);
+          alert('Error conectando con el sistema de pago.');
+          setLoading(false);
         }
       }
 
@@ -266,12 +269,16 @@ export default function CheckoutPage() {
           } else {
             console.error("Error desde Flow API", data);
             alert(`Flow rechazó el pago: ${data.error || 'Error desconocido'}. Revisa tu cuenta de Flow.`);
+            setLoading(false);
           }
         } catch (error) {
           console.error("Error llamando a API Flow", error);
+          alert('Error conectando con el sistema de pago.');
+          setLoading(false);
         }
       }
 
+      // Si no es un método con redirección online, pasamos a WhatsApp
       message += `Me gustaría pagar mediante: *${paymentNames[selectedPaymentMethod] || 'otro medio'}*.`;
       
       const whatsappUrl = `https://wa.me/56979992848?text=${encodeURIComponent(message)}`;

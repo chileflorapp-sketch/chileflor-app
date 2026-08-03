@@ -71,11 +71,12 @@ export async function POST(request: Request) {
     const orderId = flowData.commerceOrder;
 
     if (isPaid) {
-      // 2. Actualizar pedido en Supabase a 'paid'
+      // 2. Actualizar pedido en Supabase a 'pagado'
       const { error } = await supabase
         .from('pedidos')
         .update({
-          estado: 'paid', // El CRM y la tabla manejan 'paid' (vs 'pending_payment')
+          estado: 'pagado', // El CRM y la tabla manejan 'pagado'
+          metodo_pago: 'flow',
         })
         .eq('codigo_orden', orderId);
 

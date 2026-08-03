@@ -72,9 +72,10 @@ export default function PedidosManagement() {
             telefono: order.detalles?.telefono_contacto || 'No informado',
             total: order.total,
             estado: order.estado === 'pending_payment' ? 'PENDIENTE_PAGO' : 
-                    order.estado === 'pagado' ? 'PREPARANDO' : 
+                    (order.estado === 'pagado' || order.estado === 'paid') ? 'PREPARANDO' : 
                     order.estado.toUpperCase(),
             tipo: 'B2C', // Todo: Diferenciar B2B si es posible
+            metodo_pago: order.metodo_pago || order.detalles?.pago_preferido || 'No especificado',
             direccion: direccion,
             fecha: new Date(order.created_at).toLocaleString('es-CL'),
             detalle: itemsDetalle,
@@ -367,7 +368,10 @@ export default function PedidosManagement() {
                       <span className="text-fuchsia-400 font-extrabold text-sm">${order.total.toLocaleString('es-CL')}</span>
                     </div>
                     <h4 className="font-bold text-white text-sm group-hover:text-amber-200 transition-colors">{order.cliente}</h4>
-                    <p className="text-[11px] text-gray-400 mt-1 line-clamp-1">📍 {order.direccion}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-gray-400 uppercase tracking-wider">{order.metodo_pago}</span>
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-2 line-clamp-1">📍 {order.direccion}</p>
                     <p className="text-[10px] text-gray-500 mt-2 font-mono">🕒 {order.fecha}</p>
                   </div>
                 ))}
@@ -391,7 +395,10 @@ export default function PedidosManagement() {
                       <span className="text-fuchsia-400 font-extrabold text-sm">${order.total.toLocaleString('es-CL')}</span>
                     </div>
                     <h4 className="font-bold text-white text-sm group-hover:text-orange-200 transition-colors">{order.cliente}</h4>
-                    <p className="text-[11px] text-gray-400 mt-1 line-clamp-1">📍 {order.direccion}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-gray-400 uppercase tracking-wider">{order.metodo_pago}</span>
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-2 line-clamp-1">📍 {order.direccion}</p>
                     <p className="text-[10px] text-gray-500 mt-2 font-mono">🕒 {order.fecha}</p>
                   </div>
                 ))}
@@ -415,7 +422,10 @@ export default function PedidosManagement() {
                       <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider ${order.estado === 'EN_RUTA' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`}>{order.estado}</span>
                     </div>
                     <h4 className="font-bold text-white text-sm group-hover:text-emerald-200 transition-colors">{order.cliente}</h4>
-                    <p className="text-[11px] text-gray-400 mt-1 line-clamp-1">📍 {order.direccion}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-gray-400 uppercase tracking-wider">{order.metodo_pago}</span>
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-2 line-clamp-1">📍 {order.direccion}</p>
                     <p className="text-[10px] text-gray-500 mt-2 font-mono">🕒 {order.fecha}</p>
                   </div>
                 ))}
@@ -663,7 +673,10 @@ export default function PedidosManagement() {
                   <div className="text-right">
                     <p className="text-xs text-gray-500 uppercase tracking-widest mb-1 font-bold">Orden / Fecha</p>
                     <p className="text-white font-bold">{selectedOrder.id}</p>
-                    <p className="text-sm text-gray-400">{selectedOrder.fecha}</p>
+                    <p className="text-sm text-gray-400 mb-2">{selectedOrder.fecha}</p>
+                    <span className="inline-block px-3 py-1 rounded bg-white/10 text-white text-[11px] font-bold uppercase tracking-widest border border-white/20">
+                      💳 PAGO: {selectedOrder.metodo_pago}
+                    </span>
                   </div>
                 </div>
 
