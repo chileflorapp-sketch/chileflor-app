@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { sendEmail, emailCompraConfirmada } from '@/lib/email';
 
 export async function POST(request: Request) {
   try {
@@ -46,6 +47,17 @@ export async function POST(request: Request) {
 
     // Verificamos si el pago fue aprobado
     if (paymentStatus === 'approved') {
+      
+      const { data: existingOrder } = await supabaseAdmin
+        .from('pedidos')
+        .select('estado')
+        .eq('codigo_orden', orderId)
+        .single();
+
+      if (existingOrder && existingOrder.estado === 'paid') {
+        return NextResponse.json({ success: true, message: 'Pedido ya estaba marcado como pagado' });
+      }
+
       // Actualizamos el pedido en Supabase
       const { error } = await supabaseAdmin
         .from('pedidos')
@@ -57,7 +69,71 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Error de base de datos' }, { status: 500 });
       }
 
-      console.log(`Pedido ${orderId} actualizado a "paid" mediante webhook.`);
+      console.log(`Pedido ${orderId} actualizado a "paid" mediante webhook de MP.`);
+
+      // Enviar correo
+      try {
+        const { data: orderForEmail } = await supabaseAdmin
+          .from('pedidos')
+          .select('*')
+          .eq('codigo_orden', orderId)
+          .single();
+        
+        if (orderForEmail?.detalles?.comprador?.email) {
+          const email = orderForEmail.detalles.comprador.email;
+          const nombre = orderForEmail.detalles.comprador.nombre || 'Cliente';
+          const items = orderForEmail.detalles.items || [];
+          const htmlBody = emailCompraConfirmada(orderId, orderForEmail.total, items, nombre);
+          await sendEmail({
+            to: email,
+            subject: `🌸 ¡Gracias por tu compra! Pedido #${orderId} confirmado`,
+            html: htmlBody
+          });
+        }
+      } catch (emailErr) {
+        console.error('Error enviando email de confirmación (MP):', emailErr);
+      }
+
+      // Notificaciones
+      const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
+      const telegramChatId = process.env.TELEGRAM_CHAT_ID;
+      const webhookUrl = process.env.NOTIFICATIONS_WEBHOOK_URL;
+
+      if (telegramToken && telegramChatId || webhookUrl) {
+        try {
+          const { data: orderData } = await supabaseAdmin
+            .from('pedidos')
+            .select('*, cliente_id(*)')
+            .eq('codigo_orden', orderId)
+            .single();
+
+          if (orderData) {
+            const totalFormat = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(orderData.total);
+            const message = `🚨 *¡NUEVA VENTA CONFIRMADA (Mercado Pago)!* 🚨\n\n` +
+                            `🛍️ *Orden:* #${orderData.codigo_orden}\n` +
+                            `💰 *Total:* ${totalFormat}\n` +
+                            `📅 *Fecha de entrega:* ${orderData.fecha_entrega || 'No especificada'}\n\n` +
+                            `👉 Revisa los detalles en el panel CRM.`;
+
+            if (telegramToken && telegramChatId) {
+              const telegramUrl = `https://api.telegram.org/bot${telegramToken}/sendMessage`;
+              await fetch(telegramUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: telegramChatId, text: message, parse_mode: 'Markdown' })
+              });
+            } else if (webhookUrl) {
+              await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: message, text: message })
+              });
+            }
+          }
+        } catch (notifError) {
+          console.error('Error enviando notificación (MP):', notifError);
+        }
+      }
     }
 
     return NextResponse.json({ success: true, message: 'Notificación procesada correctamente' });

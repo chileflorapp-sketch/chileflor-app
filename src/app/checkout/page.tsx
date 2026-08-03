@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useCart } from '@/context/CartContext';
-import { ShoppingCart, MapPin, Truck, CreditCard, ShieldCheck, User, Loader2, ArrowRight, Mail, Gift, Check, ChevronRight, Crown } from 'lucide-react';
+import { ShoppingCart, MapPin, Truck, CreditCard, ShieldCheck, User, Loader2, ArrowRight, Mail, Gift, Check, ChevronRight, Crown, Handshake } from 'lucide-react';
 
 export default function CheckoutPage() {
   const { items, cartTotal, cartCount, clearCart, updateQuantity, removeFromCart } = useCart();
@@ -11,7 +11,7 @@ export default function CheckoutPage() {
   const [isNightService, setIsNightService] = useState(false);
   const [loading, setLoading] = useState(false);
   const [comuna, setComuna] = useState('');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('flow');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('mercadopago');
   const [orderGenerated, setOrderGenerated] = useState<string | null>(null);
   
   // VIP Points
@@ -196,6 +196,7 @@ export default function CheckoutPage() {
 
       const paymentNames: Record<string, string> = {
         transbank: 'Transbank / Red Compra',
+        mercadopago: 'Mercado Pago (Crédito, Débito)',
         flow: 'Pago Online (Flow)',
         transferencia: 'Transferencia Bancaria',
         efectivo: 'Efectivo contra entrega'
@@ -222,6 +223,30 @@ export default function CheckoutPage() {
         message += `💌 *Dedicatoria:* "${dedicatoriaMessage}"\n\n`;
       }
       
+      if (selectedPaymentMethod === 'mercadopago') {
+        try {
+          const res = await fetch('/api/mercadopago/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId,
+              total,
+              email: emailComprador
+            })
+          });
+          const data = await res.json();
+          if (data.url) {
+            window.location.href = data.url;
+            return;
+          } else {
+            console.error("Error desde MP API", data);
+            alert(`Mercado Pago devolvió un error: ${data.error || 'Error desconocido'}`);
+          }
+        } catch (error) {
+          console.error("Error llamando a API MP", error);
+        }
+      }
+
       if (selectedPaymentMethod === 'flow') {
         // Integración con Flow
         try {
@@ -240,7 +265,7 @@ export default function CheckoutPage() {
             return; // Termina la función aquí para que redirija
           } else {
             console.error("Error desde Flow API", data);
-            alert("No pudimos conectar con la pasarela de pago. Serás redirigido a WhatsApp.");
+            alert(`Flow rechazó el pago: ${data.error || 'Error desconocido'}. Revisa tu cuenta de Flow.`);
           }
         } catch (error) {
           console.error("Error llamando a API Flow", error);
@@ -604,18 +629,43 @@ export default function CheckoutPage() {
               </div>
               
               <div className="space-y-4 ml-11">
-                {/* Flow - Opcion Principal */}
-                <label className={`relative cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl border-2 transition-all ${selectedPaymentMethod === 'flow' ? 'border-[#009EE3] bg-[#009EE3]/[0.03]' : 'border-gray-100 hover:border-gray-300'}`}>
+                {/* Mercado Pago - Opcion Principal */}
+                <label className={`relative cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl border-2 transition-all ${selectedPaymentMethod === 'mercadopago' ? 'border-[#009EE3] bg-[#009EE3]/[0.03]' : 'border-gray-100 hover:border-gray-300'}`}>
+                  <input type="radio" name="payment" value="mercadopago" checked={selectedPaymentMethod === 'mercadopago'} onChange={() => setSelectedPaymentMethod('mercadopago')} className="hidden" />
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#009EE3] rounded-full shadow-md flex items-center justify-center flex-shrink-0">
+                      <Handshake className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-bold text-black">Mercado Pago</p>
+                        <span className="bg-[#009EE3] text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest">Recomendado</span>
+                      </div>
+                      <p className="text-xs text-gray-500 font-medium">Tarjetas de Crédito, Débito, y Dinero en cuenta.</p>
+                    </div>
+                  </div>
+                  
+                  {selectedPaymentMethod === 'mercadopago' && (
+                    <div className="absolute right-5 top-1/2 -translate-y-1/2">
+                      <div className="w-6 h-6 rounded-full bg-[#009EE3] flex items-center justify-center text-white">
+                        <Check className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                  )}
+                </label>
+
+                {/* Flow - Opcion Alternativa */}
+                <label className={`relative cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl border-2 transition-all ${selectedPaymentMethod === 'flow' ? 'border-orange-500 bg-orange-50' : 'border-gray-100 hover:border-gray-300'}`}>
                   <input type="radio" name="payment" value="flow" checked={selectedPaymentMethod === 'flow'} onChange={() => setSelectedPaymentMethod('flow')} className="hidden" />
                   
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center flex-shrink-0">
-                      <CreditCard className="w-6 h-6 text-[#009EE3]" />
+                      <CreditCard className="w-6 h-6 text-orange-500" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="font-bold text-black">Pago Online</p>
-                        <span className="bg-[#009EE3] text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest">Recomendado</span>
+                        <p className="font-bold text-black">Pago Online (Flow)</p>
                       </div>
                       <p className="text-xs text-gray-500 font-medium">Webpay Plus, MACH, Servipag y más.</p>
                     </div>
@@ -623,7 +673,7 @@ export default function CheckoutPage() {
                   
                   {selectedPaymentMethod === 'flow' && (
                     <div className="absolute right-5 top-1/2 -translate-y-1/2">
-                      <div className="w-6 h-6 rounded-full bg-[#009EE3] flex items-center justify-center text-white">
+                      <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white">
                         <Check className="w-3.5 h-3.5" />
                       </div>
                     </div>
