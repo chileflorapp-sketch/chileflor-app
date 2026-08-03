@@ -4,7 +4,7 @@ import crypto from 'crypto';
 const API_KEY = process.env.FLOW_API_KEY;
 const SECRET_KEY = process.env.FLOW_SECRET_KEY;
 const API_URL = process.env.FLOW_URL;
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.chileflor.cl';
 
 function getSignature(params: Record<string, string>) {
   const keys = Object.keys(params).sort();
